@@ -42,7 +42,7 @@ class Organization() : Comparable<Organization> {
     var coordinates: Coordinates = Coordinates()
 
     @Serializable(with = DateAsLongSerializer::class)
-    private var creationDate: Date = Date()
+    var creationDate: Date = Date()
 
     var annualTurnover: Int = 0
         set(value) {

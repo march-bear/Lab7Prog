@@ -55,7 +55,7 @@ class OrganizationFactory(private val reader: Reader? = null) {
             newOrganization.name = r.readString()
         }
 
-        Messenger.printMessage("Координаты")
+        Messenger.print("Координаты")
         readValueForField("x", "Double") {
             newOrganization.coordinates.x = r.readString().toDoubleOrNull()
                 ?: throw NumberFormatException("Введите дробное числовое значение")
@@ -105,12 +105,12 @@ class OrganizationFactory(private val reader: Reader? = null) {
                 consumer.accept(Unit)
                 break
             } catch (ex: ConstraintViolationException) {
-                Messenger.printMessage("Невалидное значение поля, повторите ввод", TextColor.RED)
+                Messenger.print("Невалидное значение поля, повторите ввод", TextColor.RED)
             } catch (ex: IllegalArgumentException) {
-                Messenger.printMessage("Невалидное значение поля. " +
+                Messenger.print("Невалидное значение поля. " +
                             "Ожидался аргумент типа $type. Повторите ввод", TextColor.RED)
             } catch (ex: NumberFormatException) {
-                Messenger.printMessage(ex.message ?: "Введите числовое значение", TextColor.RED)
+                Messenger.print(ex.message ?: "Введите числовое значение", TextColor.RED)
             }
         }
     }

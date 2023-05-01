@@ -1,2 +1,2 @@
 rootProject.name = "Lab7Prog"
-include(":tools")
+include(":tools", ":client", ":server")

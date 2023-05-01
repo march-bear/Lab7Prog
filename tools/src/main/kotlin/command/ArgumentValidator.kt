@@ -1,58 +1,95 @@
 package command
 
 import exceptions.InvalidArgumentsForCommandException
-import java.lang.NullPointerException
+import exceptions.ScriptException
+import request.CommandInfo
+import kotlin.NullPointerException
 
-class ArgumentValidator(private val argumentTypes: List<ArgumentType>) {
+class ArgumentValidator(
+    private val argumentTypes: List<ArgumentType>,
+    private val scriptValidator: ScriptValidator? = null,
+    ) {
     init {
-        if (ArgumentType.SCRIPT in argumentTypes && argumentTypes.size != 1)
-            throw IllegalArgumentException("Команда, принимающая аргумент SCRIPT, не может принимать другие аргументы\n" +
-                    "Обратитесь к разработчику для разъяснения ситуации: dakako@go4rta.com")
-
-        else if (argumentTypes != argumentTypes.sorted())
+        if (argumentTypes != argumentTypes.sorted())
             throw IllegalArgumentException("Описание аргументов команды должно идти в порядке: INT -> LONG -> " +
                     "FLOAT -> DOUBLE -> STRING -> ORGANIZATION.\n" +
                     "Обратитесь к разработчику для разъяснения ситуации: dakako@go4rta.com")
 
-        else if (argumentTypes.count { it == ArgumentType.ORGANIZATION } > 1) {
+        else if (argumentTypes.count { it == ArgumentType.ORGANIZATION } > 1)
             throw IllegalArgumentException("Команда не может содержать более одного аргумента ORGANIZATION\n" +
                     "Обратитесь к разработчику для разъяснения ситуации: dakako@go4rta.com")
-        }
+
+
+        else if (argumentTypes.count { it == ArgumentType.SCRIPT } > 1)
+            throw IllegalArgumentException("Команда не может содержать более одного аргумента SCRIPT\n" +
+                    "Обратитесь к разработчику для разъяснения ситуации: dakako@go4rta.com")
     }
 
     fun check(args: CommandArgument) {
-        var thereIsOrganization = false
         var counter = 0
         for (type in argumentTypes) {
             try {
                 when (type) {
-                    ArgumentType.INT -> args.primitiveTypeArguments?.get(counter)!!.toInt()
-                    ArgumentType.LONG -> args.primitiveTypeArguments?.get(counter)!!.toLong()
-                    ArgumentType.FLOAT -> args.primitiveTypeArguments?.get(counter)!!.toFloat()
-                    ArgumentType.DOUBLE -> args.primitiveTypeArguments?.get(counter)!!.toDouble()
-                    ArgumentType.STRING -> args.primitiveTypeArguments?.get(counter)!!.toString()
-                    ArgumentType.ORGANIZATION -> { thereIsOrganization = true; args.organization ?: NullPointerException()}
-                    ArgumentType.SCRIPT -> checkScript(args.primitiveTypeArguments?.get(counter)!!)
+                    ArgumentType.INT -> args.primArgs[counter].toInt()
+                    ArgumentType.LONG -> args.primArgs[counter].toLong()
+                    ArgumentType.FLOAT -> args.primArgs[counter].toFloat()
+                    ArgumentType.DOUBLE -> args.primArgs[counter].toDouble()
+                    ArgumentType.STRING -> args.primArgs[counter]
+                    ArgumentType.ORGANIZATION -> args.organization ?: throw NullPointerException()
+                    ArgumentType.SCRIPT -> checkScript(args.script)
                 }
             } catch (ex: NumberFormatException) {
-                throw InvalidArgumentsForCommandException("${args.primitiveTypeArguments?.get(counter) ?: ""}: " +
+                throw InvalidArgumentsForCommandException("${args.primArgs[counter]}: " +
                         "аргумент не удовлетворяет условию type=$type")
             } catch (ex: NullPointerException) {
                 throw InvalidArgumentsForCommandException(("Аргумент $type - не найден"))
+            } catch (ex: ScriptException) {
+                throw InvalidArgumentsForCommandException("Ошибка во время проверки скрипта:\n${ex.message}")
             }
             counter++
         }
 
-        if (counter != (args.primitiveTypeArguments?.size ?: 0))
-            throw InvalidArgumentsForCommandException(
-                if (thereIsOrganization && !args.needAnOrganization)
-                    "аргумент - объект класса organization.Organization - вводится на следующих строках " +
-                            "(для ввода объекта в конце строки поставьте \\"
-                else
-                    "${args.primitiveTypeArguments?.get(counter)}: неизвестный аргумент")
+        if (counter != (args.primArgs.size))
+            throw InvalidArgumentsForCommandException("${args.primArgs[counter]}: неизвестный аргумент")
     }
 
-    fun checkScript(filePath: String): Boolean {
-        return true
+    private fun checkScript(script: List<Pair<String, CommandArgument>>) {
+        if (scriptValidator == null)
+            throw ScriptException("Валидатор скрипта не найден")
+
+        scriptValidator.check(script)
+    }
+
+    fun checkNeedScript(): Boolean = ArgumentType.SCRIPT in argumentTypes
+
+    fun checkNeedOrganization(): Boolean = ArgumentType.ORGANIZATION in argumentTypes
+}
+
+class ScriptValidator(commandsInfo: List<CommandInfo>) {
+    private val factory = ArgumentValidatorFactory(commandsInfo)
+    fun check(script: List<Pair<String, CommandArgument>>) {
+        for ((name, args) in script) {
+            try {
+                val validator = factory.getByCommandName(name) ?: throw ScriptException("$name: команда не найдена")
+                validator.check(args)
+            } catch (ex: IllegalArgumentException) {
+                throw ScriptException(ex.message)
+            } catch (ex: InvalidArgumentsForCommandException) {
+                throw ScriptException(ex.message)
+            }
+        }
+    }
+}
+
+class ArgumentValidatorFactory(private val commandsInfo: List<CommandInfo>) {
+    fun getByCommandName(name: String): ArgumentValidator? {
+        return try {
+            val info = commandsInfo.stream().filter { it.name == name} .findFirst().get()
+            ArgumentValidator(info.args, ScriptValidator(commandsInfo))
+        } catch (ex: NullPointerException) {
+            null
+        } catch (ex: IllegalArgumentException) {
+            throw ex
+        }
     }
 }

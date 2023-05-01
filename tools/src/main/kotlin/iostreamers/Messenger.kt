@@ -8,12 +8,12 @@ class Messenger(
             return "${color.code}${text}${TextColor.DEFAULT.code}"
         }
 
-        fun printMessage(message: String? = null, color: TextColor = TextColor.DEFAULT, newLine: Boolean = true) {
-            print("${color.code}${message ?: ""}${TextColor.DEFAULT.code}" + if (newLine) "\n" else "")
+        fun print(message: String? = null, color: TextColor = TextColor.DEFAULT, newLine: Boolean = true) {
+            kotlin.io.print("${color.code}${message ?: ""}${TextColor.DEFAULT.code}" + if (newLine) "\n" else "")
         }
 
         fun inputPrompt(text: String = "", delimiter: String = ": ") {
-            print("${TextColor.GREEN.code}$text$delimiter${TextColor.DEFAULT.code}")
+            kotlin.io.print("${TextColor.GREEN.code}$text$delimiter${TextColor.DEFAULT.code}")
         }
 
         fun interactiveModeMessage() {

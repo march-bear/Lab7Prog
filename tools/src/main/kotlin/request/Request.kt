@@ -1,13 +1,13 @@
 package request
 
-import organization.Organization
+import command.CommandArgument
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class Request(
     val name: String,
     val key: String,
-    val primArgs: List<String> = listOf(),
-    val organization: Organization? = null,
-    val script: List<Request> = listOf(),
+    val args: CommandArgument = CommandArgument(),
+    val user: String = "",
+    val passwd: String = "",
 )

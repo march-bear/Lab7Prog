@@ -22,10 +22,14 @@ class Reader(private val sc: Scanner = Scanner(System.`in`)) {
         return sc.nextLine().trim()
     }
 
-    fun readCommand(): CommandData? {
+    fun readCommand(): Pair<String, CommandArgument>? {
         if (!sc.hasNextLine())
             return null
         val commandList = readString().split(Pattern.compile("\\s+"), limit = 2)
-        return CommandData(commandList[0], CommandArgument(if (commandList.size == 2) commandList[1] else null))
+        return Pair(commandList[0], CommandArgument(if (commandList.size == 2) commandList[1] else null))
+    }
+
+    fun readLoginOrPasswd() {
+
     }
 }
