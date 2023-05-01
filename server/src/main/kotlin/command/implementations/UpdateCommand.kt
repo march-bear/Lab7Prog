@@ -4,6 +4,8 @@ import collection.CollectionWrapper
 import organization.Organization
 import command.*
 import exceptions.CancellationException
+import request.Request
+import request.Response
 
 class UpdateCommand(
     private val collection: CollectionWrapper<Organization>,
@@ -16,23 +18,23 @@ class UpdateCommand(
 
     override val argumentValidator = ArgumentValidator(listOf(ArgumentType.LONG, ArgumentType.ORGANIZATION))
 
-    override fun execute(args: CommandArgument): CommandResult {
-        argumentValidator.check(args)
+    override fun execute(req: Request): Response {
+        argumentValidator.check(req.args)
 
-        val id: Long = args.primitiveTypeArguments?.get(0)?.toLong() ?: -1
+        val id: Long = req.args.primArgs[0].toLong()
 
         if (!Organization.idIsValid(id))
-            return CommandResult(false, "Введенное значение не является id")
+            return Response(false, "Введенное значение не является id", req.key)
 
         oldValue = collection.find { it.id == id }
         if (oldValue != null) {
-            newValue = args.organization!!
+            newValue = req.args.organization!!
             newValue!!.id = id
             collection.replace(oldValue!!, newValue!!.clone())
-            return CommandResult(true, "Значение элемента с id $id обновлено")
+            return Response(true, "Значение элемента с id $id обновлено", req.key)
         }
 
-        return CommandResult(false, "Элемент с id=$id не найден")
+        return Response(false, "Элемент с id=$id не найден", req.key)
     }
 
     override fun cancel(): String {

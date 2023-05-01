@@ -4,6 +4,8 @@ import collection.*
 import command.*
 import exceptions.CancellationException
 import organization.Organization
+import request.Request
+import request.Response
 
 class ChangeCollectionTypeCommand(
     private val collection: CollectionWrapper<Organization>,
@@ -15,22 +17,22 @@ class ChangeCollectionTypeCommand(
 
     override val argumentValidator: ArgumentValidator = ArgumentValidator(listOf(ArgumentType.STRING))
 
-    override fun execute(args: CommandArgument): CommandResult {
-        argumentValidator.check(args)
+    override fun execute(req: Request): Response {
+        argumentValidator.check(req.args)
 
-        val type = when (args.primitiveTypeArguments!![0].lowercase()) {
+        val type = when (req.args.primArgs[0].lowercase()) {
             "queue" -> CollectionType.QUEUE
             "list" -> CollectionType.LIST
             "set" -> CollectionType.SET
-            else -> return CommandResult(false, "Заданный тип коллекции не найден")
+            else -> return Response(false, "Заданный тип коллекции не найден", req.key)
         }
 
         val wrapper: CollectionWrapperInterface<Organization> = getWrapperByType(type)
         oldType = collection.getCollectionType()
         collection.replaceCollectionWrapper(wrapper)
 
-        return CommandResult(
-            true, "Тип коллекции изменен с $oldType на ${collection.getCollectionType()}",
+        return Response(
+            true, "Тип коллекции изменен с $oldType на ${collection.getCollectionType()}", req.key,
         )
     }
 

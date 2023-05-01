@@ -1,15 +1,15 @@
 package command.implementations
 
 import CollectionController
-import IdManager
 import collection.CollectionWrapper
 import organization.Organization
 import command.*
 import exceptions.CancellationException
+import request.Request
+import request.Response
 
 class RemoveByIdCommand(
     private val collection: CollectionWrapper<Organization>,
-    private val idManager: IdManager,
 ) : Command {
     private var removedElement: Organization? = null
 
@@ -17,21 +17,21 @@ class RemoveByIdCommand(
         get() = "удалить элемент из коллекции по его id (id указывается после имени команды)"
     override val argumentValidator = ArgumentValidator(listOf(ArgumentType.LONG))
 
-    override fun execute(args: CommandArgument): CommandResult {
-        argumentValidator.check(args)
+    override fun execute(req: Request): Response {
+        argumentValidator.check(req.args)
 
-        val id: Long = args.primitiveTypeArguments?.get(0)?.toLong() ?: -1
+        val id: Long = req.args.primArgs[0].toLong()
 
         if (!Organization.idIsValid(id))
-            return CommandResult(false, "Введенное значение не является id")
+            return Response(false, "Введенное значение не является id", req.key)
 
         return try {
             removedElement = collection.stream().filter { it.id == id }.findFirst().get()
             collection.remove(removedElement!!)
 
-            CommandResult(true, "Элемент удален")
+            Response(true, "Элемент удален", req.key)
         } catch (ex: NullPointerException) {
-            CommandResult(false, "Элемент с id $id не найден")
+            Response(false, "Элемент с id $id не найден", req.key)
         }
     }
 
@@ -43,8 +43,7 @@ class RemoveByIdCommand(
             throw CancellationException("Отмена запроса невозможна, так как в коллекции уже есть элемент с таким же полным именем")
 
         if (!CollectionController.checkUniquenessId(removedElement!!.id, collection)) {
-            removedElement!!.id = idManager.generateId()
-                ?: throw CancellationException("Отмена запроса невозможна: коллекции переполнена")
+            throw CancellationException("Отмена запроса невозможна: коллекции переполнена")
         }
 
         collection.add(removedElement!!)

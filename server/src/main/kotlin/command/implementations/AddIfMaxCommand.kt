@@ -1,14 +1,15 @@
 package command.implementations
 
-import IdManager
 import collection.CollectionWrapper
 import command.*
 import exceptions.CancellationException
+import jdk.javadoc.doclet.Reporter
 import organization.Organization
+import request.Request
+import request.Response
 
 class AddIfMaxCommand(
     private val collection: CollectionWrapper<Organization>,
-    private val idManager: IdManager,
 ) : Command {
     private var newElem: Organization? = null
 
@@ -18,23 +19,19 @@ class AddIfMaxCommand(
 
     override val argumentValidator: ArgumentValidator = ArgumentValidator(listOf(ArgumentType.ORGANIZATION))
 
-    override fun execute(args: CommandArgument): CommandResult {
-        argumentValidator.check(args)
+    override fun execute(req: Request): Response {
+        argumentValidator.check(req.args)
 
-        val elem = args.organization!!
+        val elem = req.args.organization!!
 
-        if (!CollectionController.checkUniquenessId(elem.id, collection)) {
-            elem.id = idManager.generateId()
-                ?: return CommandResult(false, "Коллекция переполнена")
-            newElem = elem.clone()
-        }
+        newElem = elem.clone()
 
         if (collection.isEmpty() || newElem!! > collection.max()) {
             collection.add(newElem!!)
-            return CommandResult(true,"Элемент добавлен в коллекцию")
+            return Response(true,"Элемент добавлен в коллекцию", req.key)
         }
 
-        return CommandResult(true, "Элемент не является максимальным")
+        return Response(true, "Элемент не является максимальным", req.key)
     }
 
     override fun cancel(): String {

@@ -1,41 +1,41 @@
 package command.implementations
 
-import IdManager
+import CollectionController
 import collection.CollectionWrapper
 import command.Command
-import command.CommandArgument
-import command.CommandResult
 import exceptions.CancellationException
 import iostreamers.Messenger
 import iostreamers.TextColor
 import organization.Organization
+import request.Request
+import request.Response
 
 /**
  * Класс команды remove_head вывода первого элемента коллекции и его последующего удаления
  */
 class RemoveHeadCommand(
     private val collection: CollectionWrapper<Organization>,
-    private val idManager: IdManager,
 ) : Command {
     private var removedElement: Organization? = null
 
     override val info: String
         get() = "вывести первый элемент коллекции и удалить его"
 
-    override fun execute(args: CommandArgument): CommandResult {
-        argumentValidator.check(args)
+    override fun execute(req: Request): Response {
+        argumentValidator.check(req.args)
 
         if (collection.isEmpty())
-            return CommandResult(
+            return Response(
                 false,
-                Messenger.message("Элемент не может быть удален - коллекция пуста", TextColor.RED)
+                Messenger.message("Элемент не может быть удален - коллекция пуста", TextColor.RED),
+                req.key
             )
 
         removedElement = collection.remove()
-        return CommandResult(true, "-------------------------\n" +
+        return Response(true, "-------------------------\n" +
                 removedElement.toString() +
                 "\n-------------------------" +
-                Messenger.message("\nЭлемент удален", TextColor.BLUE))
+                Messenger.message("\nЭлемент удален", TextColor.BLUE), req.key)
     }
 
     override fun cancel(): String {
@@ -46,8 +46,7 @@ class RemoveHeadCommand(
             throw CancellationException("Отмена запроса невозможна, так как в коллекции уже есть элемент с таким же полным именем")
 
         if (!CollectionController.checkUniquenessId(removedElement!!.id, collection)) {
-            removedElement!!.id = idManager.generateId()
-                ?: throw CancellationException("Отмена запроса невозможна: коллекции переполнена")
+            throw CancellationException("Отмена запроса невозможна: коллекции переполнена")
         }
 
         collection.add(removedElement!!)

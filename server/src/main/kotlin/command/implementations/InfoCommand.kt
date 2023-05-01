@@ -2,12 +2,13 @@ package command.implementations
 
 import collection.CollectionWrapper
 import command.Command
-import command.CommandArgument
 import command.CommandResult
 import exceptions.CancellationException
 import iostreamers.Messenger
 import iostreamers.TextColor
 import organization.Organization
+import request.Request
+import request.Response
 
 class InfoCommand(
     private val collection: CollectionWrapper<Organization>,
@@ -15,8 +16,8 @@ class InfoCommand(
     override val info: String
         get() = "вывести в стандартный поток вывода информацию о коллекции"
 
-    override fun execute(args: CommandArgument): CommandResult {
-        argumentValidator.check(args)
+    override fun execute(req: Request): Response {
+        argumentValidator.check(req.args)
 
         var output = Messenger.message("Информация о коллекции:\n")
 
@@ -42,7 +43,7 @@ class InfoCommand(
 
         output += Messenger.message("\n\u00a9 ООО \"Мартовский Мишка\". Все права защищены от вас")
 
-        return CommandResult(true, output, false)
+        return Response(true, output, req.key)
     }
 
     override fun cancel(): String {

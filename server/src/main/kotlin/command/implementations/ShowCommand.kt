@@ -2,10 +2,11 @@ package command.implementations
 
 import collection.CollectionWrapper
 import command.Command
-import command.CommandArgument
 import command.CommandResult
 import exceptions.CancellationException
 import organization.Organization
+import request.Request
+import request.Response
 
 class ShowCommand(
     private val collection: CollectionWrapper<Organization>,
@@ -13,10 +14,11 @@ class ShowCommand(
     override val info: String
         get() = "вывести в стандартный поток вывода все элементы коллекции в строковом представлении"
 
-    override fun execute(args: CommandArgument): CommandResult {
-        argumentValidator.check(args)
+    override fun execute(req: Request): Response {
+        argumentValidator.check(req.args)
+
         if (collection.isEmpty()) {
-            return CommandResult(true, "Коллекция пуста", false)
+            return Response(true, "Коллекция пуста", req.key)
         }
 
         var output = "Элементы коллекции:"
@@ -27,7 +29,7 @@ class ShowCommand(
             output += "\n------------------------"
         }
 
-        return CommandResult(true, output, false)
+        return Response(true, output, req.key)
     }
 
     override fun cancel(): String {

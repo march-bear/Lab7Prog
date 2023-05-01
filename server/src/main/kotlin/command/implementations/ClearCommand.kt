@@ -2,10 +2,11 @@ package command.implementations
 
 import collection.CollectionWrapper
 import command.Command
-import command.CommandArgument
 import command.CommandResult
 import exceptions.CancellationException
 import organization.Organization
+import request.Request
+import request.Response
 
 class ClearCommand(
     private val collection: CollectionWrapper<Organization>,
@@ -15,13 +16,13 @@ class ClearCommand(
     override val info: String
         get() = "очистить коллекцию"
 
-    override fun execute(args: CommandArgument): CommandResult {
-        argumentValidator.check(args)
+    override fun execute(req: Request): Response {
+        argumentValidator.check(req.args)
 
         oldCollection = collection.clone() as CollectionWrapper<Organization>
         collection.clear()
 
-        return CommandResult(true, "Коллекция очищена")
+        return Response(true, "Коллекция очищена", req.key)
     }
 
     override fun cancel(): String {

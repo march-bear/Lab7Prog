@@ -2,12 +2,13 @@ package command.implementations
 
 import collection.CollectionWrapper
 import command.Command
-import command.CommandArgument
 import command.CommandResult
 import exceptions.CancellationException
 import iostreamers.Messenger
 import iostreamers.TextColor
 import organization.Organization
+import request.Request
+import request.Response
 import java.util.stream.Collectors
 
 /**
@@ -21,11 +22,11 @@ class GroupCountingByEmployeesCountCommand(
         get() = "сгруппировать элементы коллекции по значению поля employeesCount, " +
                 "вывести количество элементов в каждой группе"
 
-    override fun execute(args: CommandArgument): CommandResult {
-        argumentValidator.check(args)
+    override fun execute(req: Request): Response {
+        argumentValidator.check(req.args)
 
         if (collection.isEmpty())
-            return CommandResult(true, "Коллекция пуста", false)
+            return Response(true, "Коллекция пуста", req.key)
 
         var output = ""
         collection.stream()
@@ -35,7 +36,7 @@ class GroupCountingByEmployeesCountCommand(
                 output += Messenger.message("${it.value.size}\n", TextColor.BLUE)
             }
 
-        return CommandResult(true, output, false)
+        return Response(true, output, req.key)
     }
 
     override fun cancel(): String {

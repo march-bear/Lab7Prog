@@ -1,5 +1,8 @@
 package command
 
+import request.Request
+import request.Response
+
 /**
  * Интерфейс, реализуемый всеми классами команд
  */
@@ -17,9 +20,9 @@ interface Command {
 
     /**
      * Исполняет команду
-     * @param args аргументы, подаваемые с командой, представленные строкой
+     * @param req аргументы, подаваемые с командой, представленные строкой
      */
-    fun execute(args: CommandArgument): CommandResult
+    fun execute(req: Request): Response
 
     fun cancel(): String
 }

@@ -1,10 +1,12 @@
 package command.implementations
 
-import IdManager
+import CollectionController
 import collection.CollectionWrapper
 import command.*
 import exceptions.CancellationException
 import organization.Organization
+import request.Request
+import request.Response
 import java.util.*
 
 /**
@@ -12,7 +14,6 @@ import java.util.*
  */
 class RemoveLowerCommand(
     private val collection: CollectionWrapper<Organization>,
-    private val idManager: IdManager,
 ) : Command {
     private var removedElements: LinkedList<Organization>? = null
 
@@ -21,10 +22,10 @@ class RemoveLowerCommand(
 
     override val argumentValidator = ArgumentValidator(listOf(ArgumentType.ORGANIZATION))
 
-    override fun execute(args: CommandArgument): CommandResult {
-        argumentValidator.check(args)
+    override fun execute(req: Request): Response {
+        argumentValidator.check(req.args)
 
-        val element = args.organization!!
+        val element = req.args.organization!!
 
         var output = ""
 
@@ -39,12 +40,9 @@ class RemoveLowerCommand(
         }
 
         if (output != "")
-            return CommandResult(true, output)
+            return Response(true, output, req.key)
 
-        return CommandResult(
-            true,
-            "В коллекции нет элементов, меньших, чем введенный"
-        )
+        return Response(true, "В коллекции нет элементов, меньших, чем введенный", req.key)
     }
 
     override fun cancel(): String {
@@ -57,8 +55,7 @@ class RemoveLowerCommand(
                 )
 
             if (!CollectionController.checkUniquenessId(removedElement.id, collection)) {
-                removedElement.id = idManager.generateId()
-                    ?: throw CancellationException("Отмена команды невозможна: коллекции переполнена")
+                throw CancellationException("Отмена команды невозможна: коллекции переполнена")
             }
         }
 

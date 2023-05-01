@@ -2,12 +2,13 @@ package command.implementations
 
 import collection.CollectionWrapper
 import command.Command
-import command.CommandArgument
 import command.CommandResult
 import exceptions.CancellationException
 import iostreamers.Messenger
 import iostreamers.TextColor
 import organization.Organization
+import request.Request
+import request.Response
 
 class SumOfEmployeesCountCommand(
     private val collection: CollectionWrapper<Organization>,
@@ -15,18 +16,18 @@ class SumOfEmployeesCountCommand(
     override val info: String
         get() = "вывести сумму значений поля employeesCount для всех элементов коллекции"
 
-    override fun execute(args: CommandArgument): CommandResult {
-        argumentValidator.check(args)
+    override fun execute(req: Request): Response {
+        argumentValidator.check(req.args)
 
         if (collection.isEmpty())
-            return CommandResult(true, "Коллекция пуста", false)
+            return Response(true, "Коллекция пуста", req.key)
 
         val sum = collection.stream().mapToLong { it.employeesCount ?: 0 }.sum()
 
         val output = Messenger.message("Общее количество работников во всех организациях: ") +
                 Messenger.message("$sum", TextColor.BLUE)
 
-        return CommandResult(true, output, false)
+        return Response(true, output, req.key)
     }
 
     override fun cancel(): String {

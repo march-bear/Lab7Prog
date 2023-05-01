@@ -5,6 +5,8 @@ import commandcallgraph.RequestGraph
 import exceptions.CancellationException
 import iostreamers.Messenger
 import iostreamers.TextColor
+import request.Request
+import request.Response
 
 class RollbackCommand(
     private val requestGraph: RequestGraph,
@@ -17,21 +19,20 @@ class RollbackCommand(
 
     override val argumentValidator: ArgumentValidator = ArgumentValidator(listOf(ArgumentType.STRING))
 
-    override fun execute(args: CommandArgument): CommandResult {
-        argumentValidator.check(args)
+    override fun execute(req: Request): Response {
+        argumentValidator.check(req.args)
 
-        val id = args.primitiveTypeArguments!![0]
+        val id = req.args.primArgs[0]
 
         val requestGraph = requestGraph
         oldCurrLeafId = requestGraph.getCurrLeafId()
         return if (requestGraph.rollback(id)) {
             currLeafId = requestGraph.getCurrLeafId()
 
-            CommandResult(true, "Коллекции возвращено состояние $id", false)
-        }
-        else {
+            Response(true, "Коллекции возвращено состояние $id", req.key)
+        } else {
             oldCurrLeafId = null
-            CommandResult(false, "Запрос с id $id не найден")
+            Response(false, "Запрос с id $id не найден", req.key)
         }
     }
 

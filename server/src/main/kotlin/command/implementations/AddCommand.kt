@@ -1,14 +1,16 @@
 package command.implementations
 
-import IdManager
 import collection.CollectionWrapper
 import command.*
+import db.DataBaseManager
 import exceptions.CancellationException
 import organization.Organization
+import request.Request
+import request.Response
 
 class AddCommand(
     private val collection: CollectionWrapper<Organization>,
-    private val idManager: IdManager,
+    private val dbManager: DataBaseManager
 ) : Command {
     private var newElem: Organization? = null
 
@@ -17,22 +19,37 @@ class AddCommand(
 
     override val argumentValidator = ArgumentValidator(listOf(ArgumentType.ORGANIZATION))
 
-    override fun execute(args: CommandArgument): CommandResult {
-        argumentValidator.check(args)
+    override fun execute(req: Request): Response {
+        argumentValidator.check(req.args)
 
-        val elem = args.organization!!
+        val elem: Organization = req.args.organization!!
 
-        if (collection.find { it.fullName == elem.fullName } != null) {
-            return CommandResult(false, "Полное имя не уникально")
-        } else if (!CollectionController.checkUniquenessId(elem.id, collection)) {
-            elem.id = idManager.generateId()
-                ?: return CommandResult(false, "Коллекция переполнена")
-            newElem = elem.clone()
+        if (collection.stream().filter { it.fullName == elem.fullName } != null) {
+            return Response(false, "Полное имя не уникально", req.key)
         }
+
+        val statCoordInsert = dbManager.connection.prepareStatement(
+            "INSERT INTO COORDINATES(x, y) VALUES (?, ?) ON CONFLICT DO NOTHING "
+        )
+        statCoordInsert.setDouble(0, elem.coordinates.x)
+        statCoordInsert.setInt(1, elem.coordinates.y)
+        statCoordInsert.executeUpdate()
+
+        val statCoordId = dbManager.connection.prepareStatement("SELECT id FROM COORDINATES WHERE x = ? AND y = ?")
+
+        statCoordId.setDouble(0, elem.coordinates.x)
+        statCoordId.setInt(1, elem.coordinates.y)
+        val coordIds = statCoordId.executeQuery()
+        val coordId = if (coordIds.next())
+            coordIds.getInt(0)
+        else
+            throw Exception()
+
+        newElem = elem.clone()
 
         collection.add(newElem!!)
 
-        return CommandResult(true, "Элемент добавлен в коллекцию")
+        return Response(true, "Элемент добавлен в коллекцию", req.key)
     }
 
     override fun cancel(): String {
