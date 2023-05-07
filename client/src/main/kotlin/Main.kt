@@ -1,3 +1,6 @@
+import clientworker.ChannelClientWorker
+import clientworker.executeCommandTasks
+import clientworker.startTasks
 import iostreamers.Messenger
 import iostreamers.Reader
 import iostreamers.TextColor
@@ -5,10 +8,16 @@ import network.WorkerInterface
 import org.koin.core.context.startKoin
 import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
+import java.net.InetSocketAddress
+import java.nio.channels.ServerSocketChannel
 
 fun main(args: Array<String>) {
     val app = startKoin {
-        modules(channelClientWorkerManager)
+        modules(
+            channelClientWorkerManager,
+            executeCommandTasks,
+            startTasks,
+        )
     }
 
     val reader = Reader()
@@ -65,5 +74,14 @@ fun main(args: Array<String>) {
         }
     }
 
-    worker.start()
+
+    val ccw = worker as ChannelClientWorker
+
+    val serverSocketChannel = ServerSocketChannel.open()
+    serverSocketChannel.bind(InetSocketAddress(5555))
+
+    ccw.addTask(app.koin.get(named("identify")))
+    ccw.addTask(app.koin.get(named("getCommandInfo")))
+
+    ccw.start()
 }

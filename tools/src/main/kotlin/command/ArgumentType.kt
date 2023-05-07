@@ -7,6 +7,5 @@ enum class ArgumentType {
     DOUBLE,
     STRING,
     ORGANIZATION,
-    SCRIPT,
 }
 

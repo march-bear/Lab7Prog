@@ -25,7 +25,5 @@ class CommandArgument(private val argsString: String? = null) {
     var organization: Organization? = null
         private set
 
-    val script = mutableListOf<Pair<String, CommandArgument>>()
-
     fun setOrganization(org: Organization): Boolean = if (organization != null) { false } else { organization = org; true }
 }

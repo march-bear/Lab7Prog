@@ -7,4 +7,5 @@ data class Response(
     val success: Boolean,
     val message: String,
     val requestKey: String,
+    val necessaryTask: String? = null,
 )
