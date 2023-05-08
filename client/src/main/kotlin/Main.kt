@@ -77,11 +77,5 @@ fun main(args: Array<String>) {
 
     val ccw = worker as ChannelClientWorker
 
-    val serverSocketChannel = ServerSocketChannel.open()
-    serverSocketChannel.bind(InetSocketAddress(5555))
-
-    ccw.addTask(app.koin.get(named("identify")))
-    ccw.addTask(app.koin.get(named("getCommandInfo")))
-
     ccw.start()
 }

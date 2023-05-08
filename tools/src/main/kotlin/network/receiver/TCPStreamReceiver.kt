@@ -5,7 +5,7 @@ import java.net.Socket
 import java.nio.ByteBuffer
 
 class TCPStreamReceiver(private val sock: Socket) : ReceiverInterface {
-    override fun receive(): Response? {
+    override fun receive(): String {
         val stream = sock.getInputStream()
         val lenArr = ByteArray(4)
         stream.read(lenArr)
@@ -14,8 +14,6 @@ class TCPStreamReceiver(private val sock: Socket) : ReceiverInterface {
         val msgArr = ByteArray(len)
         stream.read(msgArr)
 
-        val response = String(msgArr)
-
-        return ReceiverInterface.deserialize(response)
+        return String(msgArr)
     }
 }

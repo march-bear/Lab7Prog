@@ -7,8 +7,10 @@ import iostreamers.Messenger
 import iostreamers.Reader
 import iostreamers.TextColor
 import network.WorkerInterface
+import network.receiver.AbstractReceiverWrapper
 import network.receiver.ReceiverInterface
 import network.receiver.TCPChannelReceiver
+import network.sender.AbstractSenderWrapper
 import network.sender.SenderInterface
 import network.sender.TCPChannelSender
 import org.koin.core.component.KoinComponent
@@ -21,6 +23,7 @@ import request.Response
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.SocketException
+import java.nio.BufferUnderflowException
 import java.nio.channels.SelectionKey
 import java.nio.channels.SelectionKey.*
 import java.nio.channels.Selector
@@ -36,20 +39,16 @@ class ChannelClientWorker (
     private val remote = InetSocketAddress(serverHost, serverPort)
 
     private lateinit var sock: SocketChannel
-    private lateinit var receiver: ReceiverInterface
-    private lateinit var sender: SenderInterface
+    private lateinit var receiver: AbstractReceiverWrapper<Response>
+    private lateinit var sender: AbstractSenderWrapper<Request>
 
-    private val tasksOnConnect: ConcurrentLinkedQueue<Task> = ConcurrentLinkedQueue()
     private val commandList: MutableList<CommandInfo> = mutableListOf()
 
     internal var user: String = ""
     internal var password: String = ""
     internal var token: String? = null
-    internal var isStarted: Boolean = false
 
     override fun start() {
-        isStarted = true
-
         if (!connect()) {
             for (_i in 1..20) {
                 Messenger.print("Сервер недоступен. Попытка переподключения...", TextColor.RED)
@@ -60,18 +59,13 @@ class ChannelClientWorker (
 
             if (!sock.isConnected) {
                 Messenger.print("Переподключение безуспешно. Завершение работы клиента...")
-                isStarted = false
                 return
             }
         }
 
-        while (tasksOnConnect.isNotEmpty()) {
-            tasksOnConnect.poll().execute(this)
-        }
+        get<Task>(named("checkConnect")).execute(this)
 
         interactiveMode()
-
-        isStarted = false
         exitProcess(0)
     }
 
@@ -114,9 +108,11 @@ class ChannelClientWorker (
         val startTime = System.currentTimeMillis()
 
         while (System.currentTimeMillis() - startTime <= MAX_RESPONSE_TIME) {
-            response = receive()
-            if (response != null)
-                return response
+            try {
+                response = receive()
+                if (response != null)
+                    return response
+            } catch (_: BufferUnderflowException) { }
         }
 
         return null
@@ -141,6 +137,7 @@ class ChannelClientWorker (
                     "exit" -> get<Task>(named("exit")) { parametersOf(args) }.execute(this)
                     "help" ->  get<Task>(named("help")) { parametersOf(args) }.execute(this)
                     "execute_script" -> get<Task>(named("execute_script")) { parametersOf(args) }.execute(this)
+
                     else -> {
                         val commandInfo = commandList.stream().filter { it.name == name }.findFirst().get()
                         if (ArgumentType.ORGANIZATION in commandInfo.args)
@@ -149,9 +146,8 @@ class ChannelClientWorker (
                         argValidatorFactory.getByCommandName(name)!!.check(args)
                         val key = generateKey()
                         val response = sendAndReceive(Request(name, key, args, user, token ?: ""))
-                        if (response == null) {
-                            Messenger.print()
-                        }
+                        if (response != null)
+                            processResponse(response, key)
                     }
                 }
             } catch (ex: NullPointerException) {
@@ -168,8 +164,8 @@ class ChannelClientWorker (
 
     private fun connect(): Boolean {
         sock = SocketChannel.open()
-        receiver = TCPChannelReceiver(sock)
-        sender = TCPChannelSender(sock)
+        receiver = TCPChannelReceiverWrapper(sock)
+        sender = TCPChannelSenderWrapper(sock)
 
         val selector = Selector.open()
         sock.configureBlocking(false)
@@ -205,16 +201,19 @@ class ChannelClientWorker (
         if (sock.isOpen) sock.close()
     }
 
-    internal fun addTask(task: Task) {
-        if (isStarted)
-            throw Exception("Невозможно добавить новую задачу, пока клиент запущен")
-
-        tasksOnConnect.add(task)
-    }
-
     fun updateCommandList(newList: List<CommandInfo>) {
         commandList.clear()
         commandList.addAll(newList)
+    }
+
+    private fun processResponse(response: Response, requestKey: String) {
+        if (response.requestKey == requestKey) {
+            Messenger.print(response.message, if (response.success) TextColor.BLUE else TextColor.RED)
+            for (task in response.necessaryTask?.split(' ') ?: listOf())
+                get<Task>(named(task)).execute(this)
+        } else {
+            Messenger.print("Ответ сервера некорректен", TextColor.RED)
+        }
     }
 
     fun getCommandList(): List<CommandInfo> = ArrayList(commandList)

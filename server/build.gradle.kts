@@ -26,6 +26,7 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.2.9")
     implementation("ch.qos.logback:logback-core:1.2.9")
     implementation("org.postgresql:postgresql:42.2.27")
+    implementation("com.google.guava:guava:31.1-jre")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("io.mockk:mockk:1.13.4")
 }

@@ -6,8 +6,8 @@ import request.CommandInfo
 import kotlin.NullPointerException
 
 class ArgumentValidator(
-    private val argumentTypes: List<ArgumentType>,
-    ) {
+    val argumentTypes: List<ArgumentType>,
+) {
     init {
         if (argumentTypes != argumentTypes.sorted())
             throw IllegalArgumentException("Описание аргументов команды должно идти в порядке: INT -> LONG -> " +

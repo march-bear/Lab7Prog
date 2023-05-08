@@ -1,28 +1,44 @@
 package clientworker
 
+import command.ArgumentType
 import command.ArgumentValidator
 import command.CommandArgument
+import exceptions.ScriptException
 import iostreamers.Messenger
 import iostreamers.Reader
 import iostreamers.TextColor
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import request.Request
 import java.lang.Exception
+import java.util.*
 
 val startTasks = module {
+    factory(named("checkConnect")) {
+        Task {
+            Messenger.print("Проверка соединения...")
+            val response = sendAndReceive(Request("check", "CHECK", user = user, passwd = token ?: password))
+                ?: return@Task Messenger.print("Сервер не отвечает", TextColor.RED)
+            Messenger.print(response.message)
+            for (task in response.necessaryTask!!.split(' '))
+                get<Task>(named(task)).execute(this)
+        }
+    }
+
     factory(named("getCommandInfo")) {
         Task {
             Messenger.print("Запрос на получение актуального списка команд...")
+
             val response = sendAndReceive(Request("help", "HELP", user = user, passwd = token ?: password))
                 ?: return@Task Messenger.print("Сервер не отвечает", TextColor.RED)
 
             Messenger.print("Ответ получен", TextColor.BLUE)
 
-            if (response.requestKey == "") {
+            if (response.requestKey == "HELP") {
                 if (response.success) {
                     try {
                         updateCommandList(Json.decodeFromString(response.message))
@@ -38,6 +54,7 @@ val startTasks = module {
                 }
             } else {
                 Messenger.print("Ответ сервера некорректен, попытка повторной отправки запроса")
+                Thread.sleep(500)
                 get<Task>(named("getCommandInfo")).execute(this)
             }
         }
@@ -105,7 +122,29 @@ val executeCommandTasks = module {
     factory(named("execute_script")) {
             (args: CommandArgument) ->
         Task {
-            ArgumentValidator(listOf()).check(args)
+            ArgumentValidator(listOf(ArgumentType.STRING)).check(args)
+            val requestList: LinkedList<Pair<String, CommandArgument>> = LinkedList()
+            val fileName: String = args.primArgs[0]
+            val scriptFiles = LinkedList<String>()
+
+            try {
+                addCommandsFromFile(fileName, requestList, scriptFiles, getCommandList())
+            } catch (ex: ScriptException) {
+                Messenger.print(ex.message, TextColor.RED)
+                return@Task
+            }
+
+            for (command in requestList) {
+                when (command.first) {
+                    "exit", "help", "execute_script" ->
+                        get<Task>(named(command.first)) { parametersOf(command.second) }.execute(this)
+                    else -> {
+                        val key = ChannelClientWorker.generateKey()
+                        val response = sendAndReceive(Request(command.first, key, command.second, user, token ?: password))
+                    }
+                }
+            }
         }
     }
 }
+

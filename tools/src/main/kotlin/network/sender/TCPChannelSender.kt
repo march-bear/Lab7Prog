@@ -13,8 +13,7 @@ import java.nio.channels.SocketChannel
 class TCPChannelSender(private val sock: SocketChannel): SenderInterface {
     private val msgBuf = ByteBuffer.allocate(65536)
 
-    override fun send(request: Request) {
-        val msg = SenderInterface.serialize(request) ?: throw Exception("АААААААААААААААА, РЯТУЙТЕ")
+    override fun send(msg: String) {
         val msgLen = msg.length
 
         msgBuf.clear()
