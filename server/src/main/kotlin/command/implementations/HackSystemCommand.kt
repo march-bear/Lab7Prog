@@ -2,7 +2,6 @@ package command.implementations
 
 import command.Command
 import exceptions.InvalidArgumentsForCommandException
-import iostreamers.Messenger
 import request.Request
 import request.Response
 

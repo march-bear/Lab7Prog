@@ -2,6 +2,8 @@ package command.implementations
 
 import command.Command
 import db.DataBaseManager
+import db.checkToken
+import db.getUserByToken
 import request.Request
 import request.Response
 
@@ -13,18 +15,20 @@ class ClearCommand(
         get() = "очистить коллекцию"
 
     private val statAllDelete = dbManager.connection.prepareStatement(
-        "DELETE FROM TABLE ORGANIZATIONS WHERE owner_id = ?"
-    )
-
-    private val statUserIdByTokenSelect = dbManager.connection.prepareStatement(
-        "SELECT * FROM USERS JOIN TOKENS ON USERS.id = TOKENS.user_id and TOKENS.token_hash = ?"
+        "DELETE FROM ORGANIZATIONS WHERE owner_id = ?"
     )
 
     override fun execute(req: Request): Response {
         argumentValidator.check(req.args)
+        if (!dbManager.checkToken(req.token)) {
+            return Response(false, "Токен невалиден", req.key, "identify")
+        }
 
+        val userId = dbManager.getUserByToken(req.token)
+            ?: return Response(false, "Токен невалиден", req.key, "identify")
 
+        statAllDelete.setInt(1, userId)
 
-        return Response(true, "Удалено элементов: d", req.key)
+        return Response(true, "Удалено элементов: ${statAllDelete.executeUpdate()}", req.key)
     }
 }

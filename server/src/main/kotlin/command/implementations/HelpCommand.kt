@@ -1,7 +1,6 @@
 package command.implementations
 
 import command.Command
-import exceptions.CancellationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import request.CommandInfo

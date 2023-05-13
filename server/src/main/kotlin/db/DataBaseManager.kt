@@ -35,7 +35,7 @@ class DataBaseManager(
                     "id SERIAL PRIMARY KEY," +
                     "user_id BIGINT NOT NULL REFERENCES USERS(id) ON DELETE CASCADE," +
                     "token_hash TEXT UNIQUE NOT NULL," +
-                    "last_use TIMESTAMP NOT NULL," +
+                    "last_use TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                     "valid BOOLEAN NOT NULL" +
                     ")"
         )
@@ -76,7 +76,7 @@ class DataBaseManager(
             "CREATE TABLE IF NOT EXISTS ORGANIZATIONS(" +
                     "id SERIAL PRIMARY KEY," +
                     "name TEXT NOT NULL," +
-                    "date TIMESTAMP NOT NULL," +
+                    "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                     "coord_id BIGINT NOT NULL REFERENCES COORDINATES(id) ON DELETE CASCADE," +
                     "annual_turnover INT NOT NULL CHECK(annual_turnover > 0)," +
                     "full_name TEXT UNIQUE," +

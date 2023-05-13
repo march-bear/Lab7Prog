@@ -1,37 +1,41 @@
-import collection.CollectionWrapper
 import command.Command
-import command.implementations.HelpCommand
-import command.implementations.LogInCommand
-import command.implementations.RegisterCommand
+import command.implementations.*
 import db.DataBaseManager
 import iostreamers.Messenger
 import network.WorkerInterface
 import org.koin.core.parameter.ParametersHolder
+import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
-import organization.Organization
 import request.CommandInfo
 import request.Request
 import request.Response
 import serverworker.LoggerWrapper
 import serverworker.StreamServerWorker
-import java.io.File
 import java.util.*
 
-val qualifiers = listOf<String>(
+val qualifiers = listOf(
+    "add",
     "hack",
+    "disconnect",
+    "group_counting_by_employees_count",
+    "clear",
 )
 
 val commandModule = module {
     single<Command>(named("help")) {
-            (_: CollectionWrapper<Organization>, _: CollectionController) ->
+            (dbManager: DataBaseManager, cController: CollectionController) ->
         val commandInfos = mutableListOf<CommandInfo>()
         for (qualifier in qualifiers) {
-            val command = get<Command>(named(qualifier))
+            val command = get<Command>(named(qualifier)) { parametersOf(dbManager, cController) }
             commandInfos.add(CommandInfo(qualifier, command.info, command.argumentValidator.argumentTypes))
         }
 
         HelpCommand(commandInfos)
+    }
+
+    factory<Command>(named("add")) {
+        (dbManager: DataBaseManager) -> AddCommand(dbManager)
     }
 
     single<Command>(named("hack")) {
@@ -44,14 +48,16 @@ val commandModule = module {
             }
         }
     }
+    factory<Command>(named("clear")) { (dbManager: DataBaseManager) -> ClearCommand(dbManager) }
 
-    factory<Command>(named("log_in")) {(dbManager: DataBaseManager) ->
-        LogInCommand(dbManager)
+    factory<Command>(named("group_counting_by_employees_count")) {
+            (dbManager: DataBaseManager) -> GroupCountingByEmployeesCountCommand(dbManager)
     }
 
-    factory<Command>(named("register")) {(dbManager: DataBaseManager, cController: CollectionController) ->
-        RegisterCommand(dbManager, cController)
-    }
+    factory<Command>(named("disconnect")) { (dbManager: DataBaseManager) -> DisconnectCommand(dbManager) }
+    single<Command>(named("check_token")) { (dbManager: DataBaseManager) -> CheckTokenCommand(dbManager) }
+    factory<Command>(named("log_in")) { (dbManager: DataBaseManager) -> LogInCommand(dbManager) }
+    factory<Command>(named("register")) { (dbManager: DataBaseManager) -> RegisterCommand(dbManager) }
 
     single<Command>(named("check_connect")) {
         object : Command {

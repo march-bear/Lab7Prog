@@ -2,8 +2,6 @@ package command.implementations
 
 import collection.CollectionWrapper
 import command.*
-import exceptions.CancellationException
-import jdk.javadoc.doclet.Reporter
 import organization.Organization
 import request.Request
 import request.Response

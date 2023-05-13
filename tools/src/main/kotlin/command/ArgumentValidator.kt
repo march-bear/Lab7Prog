@@ -42,7 +42,7 @@ class ArgumentValidator(
             counter++
         }
 
-        if (counter != (args.primArgs.size))
+        if (counter != (args.primArgs.size + if(args.organization != null) 1 else 0))
             throw InvalidArgumentsForCommandException("${args.primArgs[counter]}: неизвестный аргумент")
     }
 

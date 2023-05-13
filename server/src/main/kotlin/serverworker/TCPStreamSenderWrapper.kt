@@ -14,7 +14,7 @@ class TCPStreamSenderWrapper(sock: Socket) : AbstractSenderWrapper<Response>() {
 
     override fun send(msg: Response) {
         val msgString = serialize(msg) ?: throw Exception()
-        println(msgString)
+        println(msg)
         sender.send(msgString)
     }
 

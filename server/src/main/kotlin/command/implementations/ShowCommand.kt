@@ -2,7 +2,6 @@ package command.implementations
 
 import collection.CollectionWrapper
 import command.Command
-import exceptions.CancellationException
 import organization.Organization
 import request.Request
 import request.Response

@@ -15,7 +15,7 @@ class TCPChannelSender(private val sock: SocketChannel): SenderInterface {
 
     override fun send(msg: String) {
         val msgLen = msg.length
-
+        println(msg)
         msgBuf.clear()
         msgBuf.limit(msgLen + 4)
         msgBuf.putInt(msgLen)

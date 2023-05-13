@@ -2,7 +2,6 @@ package command.implementations
 
 import collection.CollectionWrapper
 import command.Command
-import exceptions.CancellationException
 import iostreamers.Messenger
 import iostreamers.TextColor
 import organization.Organization
