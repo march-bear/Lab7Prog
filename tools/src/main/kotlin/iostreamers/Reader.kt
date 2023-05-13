@@ -28,8 +28,4 @@ class Reader(private val sc: Scanner = Scanner(System.`in`)) {
         val commandList = readString().split(Pattern.compile("\\s+"), limit = 2)
         return Pair(commandList[0], CommandArgument(if (commandList.size == 2) commandList[1] else null))
     }
-
-    fun readLoginOrPasswd() {
-
-    }
 }

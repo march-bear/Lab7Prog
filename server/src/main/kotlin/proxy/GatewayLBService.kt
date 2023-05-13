@@ -3,14 +3,15 @@ package proxy
 import network.WorkerInterface
 import org.slf4j.LoggerFactory
 import serverworker.LoggerWrapper
+import java.net.Proxy
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.Executors
 
-class StreamProxyServerWorker(
+class GatewayLBService(
     port: Int,
 ) : WorkerInterface {
-    private val log = LoggerWrapper(LoggerFactory.getLogger(StreamProxyServerWorker::class.java))
+    private val log = LoggerWrapper(LoggerFactory.getLogger(GatewayLBService::class.java))
     private val serv: ServerSocket = ServerSocket(port)
     private val workerList: MutableList<Socket> = mutableListOf()
 

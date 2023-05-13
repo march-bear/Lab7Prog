@@ -1,7 +1,6 @@
 package command.implementations
 
 import command.Command
-import command.CommandResult
 import exceptions.InvalidArgumentsForCommandException
 import iostreamers.Messenger
 import request.Request
@@ -17,12 +16,11 @@ class HackSystemCommand : Command {
         } catch (ex: InvalidArgumentsForCommandException) {
             return Response(
                 true,
-                "Не усложняйте работу команде - она прекрасно взломает систему и без доп. аргументов ;)",
+                "К черту аргументы, чел, введи все нормально",
                 req.key,
             )
         }
-        return Response(true, Messenger.oops(), req.key)
-    }
 
-    override fun cancel(): String = "Ну-ну, отменяй"
+        return Response(true, "Break a (your) leg, imp!", req.key, "breakALeg")
+    }
 }

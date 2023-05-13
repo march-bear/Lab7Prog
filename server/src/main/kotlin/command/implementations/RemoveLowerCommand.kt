@@ -44,27 +44,4 @@ class RemoveLowerCommand(
 
         return Response(true, "В коллекции нет элементов, меньших, чем введенный", req.key)
     }
-
-    override fun cancel(): String {
-        for (removedElement in removedElements!!) {
-            if (!CollectionController.checkUniquenessFullName(removedElement.fullName, collection) ||
-                !CollectionController.checkUniquenessId(removedElement.id, collection)
-            )
-                throw CancellationException(
-                    "Отмена команды невозможна, так как в коллекции уже есть элемент с таким же полным именем"
-                )
-
-            if (!CollectionController.checkUniquenessId(removedElement.id, collection)) {
-                throw CancellationException("Отмена команды невозможна: коллекции переполнена")
-            }
-        }
-
-        for (removedElement in removedElements!!) {
-            collection.add(removedElement)
-        }
-
-        removedElements = null
-
-        return "Команда на удаление элементов отменена"
-    }
 }

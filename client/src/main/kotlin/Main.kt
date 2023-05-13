@@ -8,8 +8,6 @@ import network.WorkerInterface
 import org.koin.core.context.startKoin
 import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
-import java.net.InetSocketAddress
-import java.nio.channels.ServerSocketChannel
 
 fun main(args: Array<String>) {
     val app = startKoin {

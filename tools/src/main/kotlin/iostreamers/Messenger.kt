@@ -12,8 +12,8 @@ class Messenger(
             kotlin.io.print("${color.code}${message ?: ""}${TextColor.DEFAULT.code}" + if (newLine) "\n" else "")
         }
 
-        fun inputPrompt(text: String = "", delimiter: String = ": ") {
-            kotlin.io.print("${TextColor.GREEN.code}$text$delimiter${TextColor.DEFAULT.code}")
+        fun inputPrompt(text: String = "", delimiter: String = ": ", color: TextColor = TextColor.GREEN) {
+            kotlin.io.print("${color.code}$text$delimiter${TextColor.DEFAULT.code}")
         }
 
         fun interactiveModeMessage() {
@@ -91,8 +91,8 @@ class Messenger(
                     "╚═╝░░╚═╝░╚════╝░░░░╚═╝░░░╚═╝░░░╚═╝░░░╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚═════╝░")
         }
 
-        fun whatThe() {
-            println("___________\$\$\$\$\$\$\n" +
+        fun whatThe(): String {
+            return "___________\$\$\$\$\$\$\n" +
                     "___________\$\$_____\$\$\n" +
                     "__________\$__(•)____\$\$\n" +
                     "________\$\$__________\$\n" +
@@ -110,7 +110,7 @@ class Messenger(
                     "……......¤?“????????“?¤...¤?“????????“?¤......\n" +
                     "#\$)(*%&\$(*%& ╬╬ █╬╬╬█ █╬█ ███ ███ ╬╬ ███ █╬█ ██?. █ @#\$()*&#*@\n" +
                     "#\$)(*%&\$(*%& ╬╬ █╬█╬█ █▄█ █▄█ ╬█╬ ╬╬ ╬█╬ █▄█ █▄?▀ ░ @#\$()*&#*@\n" +
-                    "#\$)(*%&\$(*%& ╬╬ █▄█▄█ █╬█ █╬█ ╬█╬ ╬╬ ╬█╬ █╬█ █▄? ▀ ▀ @#\$()*&#*@\n")
+                    "#\$)(*%&\$(*%& ╬╬ █▄█▄█ █╬█ █╬█ ╬█╬ ╬╬ ╬█╬ █╬█ █▄? ▀ ▀ @#\$()*&#*@\n"
         }
     }
 }

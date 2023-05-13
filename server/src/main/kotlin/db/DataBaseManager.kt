@@ -26,14 +26,17 @@ class DataBaseManager(
             "CREATE TABLE IF NOT EXISTS USERS(" +
                     "id SERIAL PRIMARY KEY," +
                     "login TEXT UNIQUE NOT NULL," +
-                    "passwd TEXT NOT NULL" +
+                    "passwd_hash TEXT NOT NULL" +
                     ")"
         )
 
         stat.execute(
-            "CREATE TABLE IF NOT EXISTS STATUSES(" +
+            "CREATE TABLE IF NOT EXISTS TOKENS(" +
                     "id SERIAL PRIMARY KEY," +
-                    "name TEXT UNIQUE NOT NULL" +
+                    "user_id BIGINT NOT NULL REFERENCES USERS(id) ON DELETE CASCADE," +
+                    "token_hash TEXT UNIQUE NOT NULL," +
+                    "last_use TIMESTAMP NOT NULL," +
+                    "valid BOOLEAN NOT NULL" +
                     ")"
         )
 
@@ -78,10 +81,15 @@ class DataBaseManager(
                     "annual_turnover INT NOT NULL CHECK(annual_turnover > 0)," +
                     "full_name TEXT UNIQUE," +
                     "employees_count INT CHECK(employees_count > 0)," +
-                    "organization_type_id SERIAL REFERENCES ORGANIZATION_TYPES(id) ON DELETE CASCADE," +
+                    "organization_type_id SMALLINT REFERENCES ORGANIZATION_TYPES(id) ON DELETE CASCADE," +
                     "address_id BIGINT REFERENCES ADDRESSES(id) ON DELETE SET NULL," +
                     "owner_id BIGINT REFERENCES USERS(id) ON DELETE SET NULL" +
                     ")"
         )
+    }
+
+    fun authorizeUser(login: String, passwd: String): String {
+
+        return ""
     }
 }

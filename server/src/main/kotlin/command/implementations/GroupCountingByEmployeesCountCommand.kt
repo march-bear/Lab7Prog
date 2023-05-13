@@ -2,13 +2,13 @@ package command.implementations
 
 import collection.CollectionWrapper
 import command.Command
-import command.CommandResult
-import exceptions.CancellationException
+import db.DataBaseManager
 import iostreamers.Messenger
 import iostreamers.TextColor
 import organization.Organization
 import request.Request
 import request.Response
+import java.util.concurrent.Executors
 import java.util.stream.Collectors
 
 /**
@@ -17,14 +17,19 @@ import java.util.stream.Collectors
  */
 class GroupCountingByEmployeesCountCommand(
     private val collection: CollectionWrapper<Organization>,
+    private val dbManager: DataBaseManager,
 ) : Command {
     override val info: String
         get() = "сгруппировать элементы коллекции по значению поля employeesCount, " +
                 "вывести количество элементов в каждой группе"
 
+    private val statGroupByEmpCount = dbManager.connection.prepareStatement(
+        "SELECT COUNT(id), employees_count FROM ORGANIZATIONS GROUP BY employees_count"
+    )
+
     override fun execute(req: Request): Response {
         argumentValidator.check(req.args)
-
+        Executors.newFixedThreadPool(10).execute {  }
         if (collection.isEmpty())
             return Response(true, "Коллекция пуста", req.key)
 
@@ -37,9 +42,5 @@ class GroupCountingByEmployeesCountCommand(
             }
 
         return Response(true, output, req.key)
-    }
-
-    override fun cancel(): String {
-        throw CancellationException("Отмена выполнения команды невозможна")
     }
 }

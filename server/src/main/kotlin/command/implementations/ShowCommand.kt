@@ -2,7 +2,6 @@ package command.implementations
 
 import collection.CollectionWrapper
 import command.Command
-import command.CommandResult
 import exceptions.CancellationException
 import organization.Organization
 import request.Request
@@ -30,9 +29,5 @@ class ShowCommand(
         }
 
         return Response(true, output, req.key)
-    }
-
-    override fun cancel(): String {
-        throw CancellationException("Отмена выполнения команды невозможна")
     }
 }

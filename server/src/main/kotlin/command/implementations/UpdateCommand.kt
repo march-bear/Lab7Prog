@@ -36,21 +36,4 @@ class UpdateCommand(
 
         return Response(false, "Элемент с id=$id не найден", req.key)
     }
-
-    override fun cancel(): String {
-        if (oldValue == null || newValue == null)
-            throw CancellationException("Отмена выполнения невозможна, так как команда ещё не была выполнена или уже была отменена")
-
-        val value = collection.find { it == newValue }
-        if (value != null) {
-            oldValue!!.id = value.id
-            collection.replace(value, oldValue!!)
-            oldValue = null
-            newValue = null
-
-            return "Команда обновления значения элемента отменена"
-        }
-
-        throw CancellationException("Отмена выполнения команды невозможна, так как коллекция уже была модифицирована")
-    }
 }

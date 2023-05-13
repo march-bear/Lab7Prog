@@ -23,6 +23,4 @@ interface Command {
      * @param req аргументы, подаваемые с командой, представленные строкой
      */
     fun execute(req: Request): Response
-
-    fun cancel(): String
 }

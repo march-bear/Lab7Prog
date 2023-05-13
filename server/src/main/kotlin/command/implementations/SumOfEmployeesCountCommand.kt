@@ -2,7 +2,6 @@ package command.implementations
 
 import collection.CollectionWrapper
 import command.Command
-import command.CommandResult
 import exceptions.CancellationException
 import iostreamers.Messenger
 import iostreamers.TextColor
@@ -28,9 +27,5 @@ class SumOfEmployeesCountCommand(
                 Messenger.message("$sum", TextColor.BLUE)
 
         return Response(true, output, req.key)
-    }
-
-    override fun cancel(): String {
-        throw CancellationException("Отмена выполнения команды невозможна")
     }
 }

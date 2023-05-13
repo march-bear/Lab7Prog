@@ -1,7 +1,6 @@
 package command.implementations
 
 import command.Command
-import command.CommandResult
 import exceptions.CancellationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -21,9 +20,5 @@ class HelpCommand (
         val output = Json.encodeToString(commands)
 
         return Response(true, output, req.key)
-    }
-
-    override fun cancel(): String {
-        throw CancellationException("Отмена выполнения команды невозможна")
     }
 }

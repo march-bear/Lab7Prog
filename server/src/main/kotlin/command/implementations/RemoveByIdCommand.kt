@@ -34,21 +34,4 @@ class RemoveByIdCommand(
             Response(false, "Элемент с id $id не найден", req.key)
         }
     }
-
-    override fun cancel(): String {
-        if (removedElement == null)
-            throw CancellationException("Отмена запроса невозможна, так как он ещё не был выполнен или уже был отменен")
-
-        if (!CollectionController.checkUniquenessFullName(removedElement!!.fullName, collection))
-            throw CancellationException("Отмена запроса невозможна, так как в коллекции уже есть элемент с таким же полным именем")
-
-        if (!CollectionController.checkUniquenessId(removedElement!!.id, collection)) {
-            throw CancellationException("Отмена запроса невозможна: коллекции переполнена")
-        }
-
-        collection.add(removedElement!!)
-        removedElement = null
-
-        return "Запрос на удаление элемента отменен"
-    }
 }

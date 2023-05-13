@@ -2,6 +2,7 @@ package serverworker
 
 import CollectionController
 import CommandManager
+import db.DataBaseManager
 import network.WorkerInterface
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
@@ -15,11 +16,17 @@ import java.util.concurrent.*
 
 class StreamServerWorker(
     port: Int,
-    fileName: String? = null
+    dbHost: String,
+    dbPort: Int,
+    dbName: String,
+    dbUser: String,
+    dbPasswd: String,
 ) : WorkerInterface, KoinComponent {
     private val log = LoggerWrapper(LoggerFactory.getLogger(StreamServerWorker::class.java))
     private val serv: ServerSocket = ServerSocket(port)
-    private val cController: CollectionController = get(named("logging")) { parametersOf(if (fileName == null) null else File(fileName), log) }
+    private val cController: CollectionController = get(named("logging")) {
+        parametersOf(DataBaseManager(dbHost, dbPort, dbName, dbUser, dbPasswd), log)
+    }
     private var isRunning: Boolean = false
 
     override fun start() {

@@ -39,8 +39,4 @@ class PrintUniquePostalAddressCommand(
 
         return Response(true, output, req.key)
     }
-
-    override fun cancel(): String {
-        throw CancellationException("Отмена выполнения команды невозможна")
-    }
 }

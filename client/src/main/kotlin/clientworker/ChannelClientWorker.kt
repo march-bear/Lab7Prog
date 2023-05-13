@@ -1,6 +1,7 @@
 package clientworker
 
 import OrganizationFactory
+import Task
 import command.*
 import exceptions.InvalidArgumentsForCommandException
 import iostreamers.Messenger
@@ -8,11 +9,7 @@ import iostreamers.Reader
 import iostreamers.TextColor
 import network.WorkerInterface
 import network.receiver.AbstractReceiverWrapper
-import network.receiver.ReceiverInterface
-import network.receiver.TCPChannelReceiver
 import network.sender.AbstractSenderWrapper
-import network.sender.SenderInterface
-import network.sender.TCPChannelSender
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.parameter.parametersOf
@@ -29,7 +26,6 @@ import java.nio.channels.SelectionKey.*
 import java.nio.channels.Selector
 import java.nio.channels.SocketChannel
 import java.util.*
-import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.system.exitProcess
 
 class ChannelClientWorker (
@@ -43,9 +39,6 @@ class ChannelClientWorker (
     private lateinit var sender: AbstractSenderWrapper<Request>
 
     private val commandList: MutableList<CommandInfo> = mutableListOf()
-
-    internal var user: String = ""
-    internal var password: String = ""
     internal var token: String? = null
 
     override fun start() {
@@ -63,7 +56,8 @@ class ChannelClientWorker (
             }
         }
 
-        get<Task>(named("checkConnect")).execute(this)
+        Messenger.print("Проверка соединения...")
+        get<Task<ChannelClientWorker>>(named("check_connect")).execute(this)
 
         interactiveMode()
         exitProcess(0)
@@ -134,9 +128,11 @@ class ChannelClientWorker (
             val (name, args) = try { reader.readCommand()!! } catch (ex: NullPointerException) { break }
             try {
                 when (name) {
-                    "exit" -> get<Task>(named("exit")) { parametersOf(args) }.execute(this)
-                    "help" ->  get<Task>(named("help")) { parametersOf(args) }.execute(this)
-                    "execute_script" -> get<Task>(named("execute_script")) { parametersOf(args) }.execute(this)
+                    "exit" -> get<Task<ChannelClientWorker>>(named("exit")) { parametersOf(args) }.execute(this)
+                    "help" ->  get<Task<ChannelClientWorker>>(named("help")) { parametersOf(args) }.execute(this)
+                    "execute_script" -> get<Task<ChannelClientWorker>>(named("execute_script")) { parametersOf(args) }.execute(this)
+                    "check_connect" -> get<Task<ChannelClientWorker>>(named("check_connect")) { parametersOf(args) }.execute(this)
+                    "update_command_list" -> get<Task<ChannelClientWorker>>(named("getCommandInfo")) { parametersOf(args) }.execute(this)
 
                     else -> {
                         val commandInfo = commandList.stream().filter { it.name == name }.findFirst().get()
@@ -145,7 +141,7 @@ class ChannelClientWorker (
 
                         argValidatorFactory.getByCommandName(name)!!.check(args)
                         val key = generateKey()
-                        val response = sendAndReceive(Request(name, key, args, user, token ?: ""))
+                        val response = sendAndReceive(Request(name, key, args, token ?: ""))
                         if (response != null)
                             processResponse(response, key)
                     }
@@ -206,11 +202,11 @@ class ChannelClientWorker (
         commandList.addAll(newList)
     }
 
-    private fun processResponse(response: Response, requestKey: String) {
+    fun processResponse(response: Response, requestKey: String) {
         if (response.requestKey == requestKey) {
             Messenger.print(response.message, if (response.success) TextColor.BLUE else TextColor.RED)
             for (task in response.necessaryTask?.split(' ') ?: listOf())
-                get<Task>(named(task)).execute(this)
+                get<Task<ChannelClientWorker>>(named(task)).execute(this)
         } else {
             Messenger.print("Ответ сервера некорректен", TextColor.RED)
         }

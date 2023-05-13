@@ -2,7 +2,6 @@ package command.implementations
 
 import collection.CollectionWrapper
 import command.Command
-import command.CommandResult
 import exceptions.CancellationException
 import iostreamers.Messenger
 import iostreamers.TextColor
@@ -44,9 +43,5 @@ class InfoCommand(
         output += Messenger.message("\n\u00a9 ООО \"Мартовский Мишка\". Все права защищены от вас")
 
         return Response(true, output, req.key)
-    }
-
-    override fun cancel(): String {
-        throw CancellationException("Отмена выполнения команды невозможна")
     }
 }

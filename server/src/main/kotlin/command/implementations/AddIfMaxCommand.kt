@@ -33,16 +33,4 @@ class AddIfMaxCommand(
 
         return Response(true, "Элемент не является максимальным", req.key)
     }
-
-    override fun cancel(): String {
-        if (newElem == null)
-            throw CancellationException("Отмена выполнения невозможна, так как команда ещё не была выполнен или уже была отменен")
-
-        val res = collection.remove(newElem!!)
-
-        if (res)
-            return "Команда на добавление элемента отменена"
-        else
-            throw CancellationException("Отмена выполнения невозможна - добавленный элемент уже был подвергнут изменениям")
-    }
 }
