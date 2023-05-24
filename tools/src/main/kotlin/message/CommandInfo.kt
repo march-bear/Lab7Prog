@@ -1,4 +1,4 @@
-package request
+package message
 
 import command.ArgumentType
 import kotlinx.serialization.Serializable

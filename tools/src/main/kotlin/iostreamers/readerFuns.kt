@@ -38,3 +38,14 @@ fun Reader.readNotEmptyString(): String? {
         }
     }
 }
+
+fun Reader.readOneOfValues(values: List<String>): String? {
+    while (true) {
+        try {
+            val v = readNotEmptyString() ?: return null
+            return if (v in values) v else throw InputMismatchException()
+        } catch (ex: InputMismatchException) {
+            Messenger.inputPrompt("Введите одно из значений $values", color = TextColor.RED)
+        }
+    }
+}

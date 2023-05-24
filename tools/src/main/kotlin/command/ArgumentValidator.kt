@@ -2,7 +2,7 @@ package command
 
 import exceptions.InvalidArgumentsForCommandException
 import exceptions.ScriptException
-import request.CommandInfo
+import message.CommandInfo
 import kotlin.NullPointerException
 
 class ArgumentValidator(
@@ -10,7 +10,7 @@ class ArgumentValidator(
 ) {
     init {
         if (argumentTypes != argumentTypes.sorted())
-            throw IllegalArgumentException("Описание аргументов команды должно идти в порядке: INT -> LONG -> " +
+            throw IllegalArgumentException("Описание аргументов команды должно идти в порядке: TOKEN -> INT -> LONG -> " +
                     "FLOAT -> DOUBLE -> STRING -> ORGANIZATION.\n" +
                     "Обратитесь к разработчику для разъяснения ситуации: dakako@go4rta.com")
 
@@ -24,6 +24,7 @@ class ArgumentValidator(
         for (type in argumentTypes) {
             try {
                 when (type) {
+                    ArgumentType.TOKEN -> args.token ?: throw NullPointerException()
                     ArgumentType.INT -> args.primArgs[counter].toInt()
                     ArgumentType.LONG -> args.primArgs[counter].toLong()
                     ArgumentType.FLOAT -> args.primArgs[counter].toFloat()

@@ -1,19 +1,20 @@
-package request
+package message
 
 import kotlinx.serialization.Serializable
 
 /**
  * Дата-класс ответа от сервера
+ * @param key - ключ запроса
  * @param success - успешность обработки запроса
  * @param message - сообщение ответа
- * @param requestKey - ключ запроса
- * @param necessaryTask - строка с названиями задач (разделены пробелом),
- * которые должен выполнить клиент после получения ответа
+ * @param necessaryTask - строка с названием задачи,
+ * которую должен выполнить клиент после получения ответа
  */
+
 @Serializable
 data class Response(
+    override val key: String,
     val success: Boolean,
     val message: String,
-    val requestKey: String,
     val necessaryTask: String? = null,
-)
+) : Message()

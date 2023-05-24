@@ -1,5 +1,3 @@
-package serverworker
-
 import iostreamers.Messenger
 import iostreamers.TextColor
 import org.slf4j.Logger

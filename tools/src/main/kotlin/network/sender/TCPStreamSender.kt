@@ -1,6 +1,5 @@
 package network.sender
 
-import request.Request
 import java.net.Socket
 import java.nio.ByteBuffer
 

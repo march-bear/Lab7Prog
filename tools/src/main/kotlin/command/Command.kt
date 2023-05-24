@@ -1,7 +1,7 @@
 package command
 
-import request.Request
-import request.Response
+import message.Request
+import message.Response
 
 /**
  * Интерфейс, реализуемый всеми классами команд

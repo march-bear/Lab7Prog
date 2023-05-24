@@ -25,5 +25,10 @@ class CommandArgument(private val argsString: String? = null) {
     var organization: Organization? = null
         private set
 
+    var token: String? = null
+        private set
+
     fun setOrganization(org: Organization): Boolean = if (organization != null) { false } else { organization = org; true }
+
+    fun setToken(token: String): Boolean = if (token != null) { false } else { this.token = token; true }
 }
