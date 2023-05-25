@@ -1,6 +1,5 @@
 package message
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -13,9 +12,7 @@ import kotlinx.serialization.Serializable
  */
 
 @Serializable
-@SerialName("responseCase")
 data class ResponseCase(
     override val key: String,
     val response: Response,
-    val necessaryTask: String? = null,
 ) : Message()

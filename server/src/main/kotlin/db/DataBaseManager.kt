@@ -1,8 +1,10 @@
 package db
 
+import org.apache.commons.dbcp.BasicDataSource
 import organization.OrganizationType
 import java.sql.Connection
 import java.sql.DriverManager
+import java.sql.SQLException
 
 class DataBaseManager(
     host: String,
@@ -12,15 +14,32 @@ class DataBaseManager(
     passwd: String,
 ) {
     val connection: Connection
+        get() = connPool.connection
+
+    private val connPool = BasicDataSource()
 
     init {
-        val url = "jdbc:postgresql://$host:$port/$name"
         DriverManager.registerDriver(org.postgresql.Driver())
-        connection = DriverManager.getConnection(url, user, passwd)
+
+        connPool.url = "jdbc:postgresql://$host:$port/$name"
+        connPool.username = user
+        connPool.password = passwd
+
+        connPool.maxActive = 32
+    }
+
+    fun getConnection(): Connection {
+        try {
+            return connPool.connection
+        } catch (ex: SQLException) {
+            ex.printStackTrace()
+            throw ex
+        }
     }
 
     fun initTables() {
-        val stat = connection.createStatement()
+        val conn = connection
+        val stat = conn.createStatement()
 
         stat.execute(
             "CREATE TABLE IF NOT EXISTS USERS(" +
@@ -66,7 +85,7 @@ class DataBaseManager(
         val orgTypes = OrganizationType.values()
 
         for (i in orgTypes.indices) {
-            val stat = connection.prepareStatement("INSERT INTO ORGANIZATION_TYPES VALUES(?, ?) ON CONFLICT DO NOTHING")
+            val stat = conn.prepareStatement("INSERT INTO ORGANIZATION_TYPES VALUES(?, ?) ON CONFLICT DO NOTHING")
             stat.setInt(1, i + 1)
             stat.setString(2, orgTypes[i].name)
             stat.execute()
@@ -86,10 +105,8 @@ class DataBaseManager(
                     "owner_id BIGINT REFERENCES USERS(id) ON DELETE SET NULL" +
                     ")"
         )
-    }
 
-    fun authorizeUser(login: String, passwd: String): String {
-
-        return ""
+        stat.close()
+        conn.close()
     }
 }

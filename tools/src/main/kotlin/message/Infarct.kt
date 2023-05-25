@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
  */
 
 @Serializable
-data class InFUpTC(
+data class Infarct(
     override val key: String,
     val number: Long,
     val changes: List<Pair<String, CommandArgument>>,

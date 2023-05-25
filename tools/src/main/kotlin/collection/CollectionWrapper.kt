@@ -8,9 +8,6 @@ import java.util.stream.Stream
 
 @Serializable
 class CollectionWrapper<E>(private var collection: CollectionWrapperInterface<E>) : CollectionWrapperInterface<E> {
-    @Serializable(with = DateAsLongSerializer::class)
-    var initializationDate: Date = Date()
-
     override val size: Int
         get() = collection.size
 
