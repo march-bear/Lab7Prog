@@ -1,6 +1,7 @@
 package collection
 
 import kotlinx.serialization.Serializable
+import java.util.function.Predicate
 import java.util.stream.Stream
 
 @Serializable
@@ -25,6 +26,8 @@ class LinkedHashSetWrapper<E>(private val set: LinkedHashSet<E> = LinkedHashSet(
         set.remove(first)
         return first
     }
+
+    override fun removeIf(filter: Predicate<in E>): Boolean = set.removeIf(filter)
 
     override fun getCollectionName(): String = "LinkedHashSet"
     override fun getCollectionType(): CollectionType = CollectionType.SET

@@ -3,6 +3,7 @@ package collection
 import kotlinx.serialization.Serializable
 import serializers.ConcurrentLinkedQueueSerializer
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.function.Predicate
 import java.util.stream.Stream
 
 @Serializable
@@ -28,6 +29,7 @@ class ConcurrentLinkedQueueWrapper<E>(
     override fun clear() = queue.clear()
 
     override fun remove(): E = queue.remove()
+    override fun removeIf(filter: Predicate<in E>): Boolean = queue.removeIf(filter)
 
     override fun remove(element: E): Boolean = queue.remove(element)
 

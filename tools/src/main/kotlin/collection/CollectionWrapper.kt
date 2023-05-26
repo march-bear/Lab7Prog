@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 import serializers.DateAsLongSerializer
 import java.lang.IllegalArgumentException
 import java.util.Date
+import java.util.function.Predicate
 import java.util.stream.Stream
 
 @Serializable
@@ -16,6 +17,7 @@ class CollectionWrapper<E>(private var collection: CollectionWrapperInterface<E>
     override fun clear() = collection.clear()
 
     override fun remove(): E = collection.remove()
+    override fun removeIf(filter: Predicate<in E>): Boolean = collection.removeIf(filter)
 
     override fun getCollectionName(): String = collection.getCollectionName()
 

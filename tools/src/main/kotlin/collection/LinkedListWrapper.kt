@@ -3,6 +3,7 @@ package collection
 import kotlinx.serialization.Serializable
 import serializers.LinkedListSerializer
 import java.util.LinkedList
+import java.util.function.Predicate
 import java.util.stream.Stream
 
 @Serializable
@@ -31,6 +32,7 @@ class LinkedListWrapper<E>(
     override fun clear() = linkedList.clear()
 
     override fun remove(): E = linkedList.remove()
+    override fun removeIf(filter: Predicate<in E>): Boolean = linkedList.removeIf(filter)
 
     override fun iterator(): Iterator<E> = linkedList.iterator()
 

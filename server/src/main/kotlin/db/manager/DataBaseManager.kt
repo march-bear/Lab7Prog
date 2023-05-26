@@ -1,9 +1,13 @@
-package db
+package db.manager
 
+import db.requests.queries.AbstractQuery
+import db.requests.transactions.AbstractTransaction
+import message.Infarct
 import org.apache.commons.dbcp.BasicDataSource
 import organization.OrganizationType
 import java.sql.Connection
 import java.sql.DriverManager
+import java.sql.ResultSet
 import java.sql.SQLException
 
 class DataBaseManager(
@@ -13,9 +17,6 @@ class DataBaseManager(
     user: String,
     passwd: String,
 ) {
-    val connection: Connection
-        get() = connPool.connection
-
     private val connPool = BasicDataSource()
 
     init {
@@ -28,7 +29,7 @@ class DataBaseManager(
         connPool.maxActive = 32
     }
 
-    fun getConnection(): Connection {
+    private fun getConnection(): Connection {
         try {
             return connPool.connection
         } catch (ex: SQLException) {
@@ -38,7 +39,7 @@ class DataBaseManager(
     }
 
     fun initTables() {
-        val conn = connection
+        val conn = getConnection()
         val stat = conn.createStatement()
 
         stat.execute(
@@ -89,6 +90,7 @@ class DataBaseManager(
             stat.setInt(1, i + 1)
             stat.setString(2, orgTypes[i].name)
             stat.execute()
+            stat.close()
         }
 
         stat.execute(
@@ -108,5 +110,35 @@ class DataBaseManager(
 
         stat.close()
         conn.close()
+    }
+
+    fun execute(transaction: AbstractTransaction): Infarct? {
+        val conn = getConnection()
+        var res: Infarct? = null
+
+        try {
+            res = transaction.execute(conn)
+        } catch (ex: SQLException) {
+            ex.printStackTrace()
+        }
+
+        try { conn.close() } catch (_: SQLException) {}
+
+        return res
+    }
+
+    fun execute(query: AbstractQuery): ResultSet? {
+        val conn = getConnection()
+        var res: ResultSet? = null
+
+        try {
+            res = query.execute(conn)
+        } catch (ex: SQLException) {
+            ex.printStackTrace()
+        }
+
+        try { conn.close() } catch (_: SQLException) {}
+
+        return res
     }
 }

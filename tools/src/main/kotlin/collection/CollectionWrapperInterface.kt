@@ -1,6 +1,8 @@
 package collection
 
 import kotlinx.serialization.Serializable
+import java.util.*
+import java.util.function.Predicate
 import java.util.stream.Stream
 
 @Serializable
@@ -20,6 +22,8 @@ sealed interface CollectionWrapperInterface<E>: Iterable<E> {
     fun remove(): E
 
     fun remove(element: E): Boolean
+
+    fun removeIf(filter: Predicate<in E>): Boolean
 
     fun addAll(iterable: Iterable<E>) {
         for (elem in iterable)
