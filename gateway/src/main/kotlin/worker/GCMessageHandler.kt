@@ -3,6 +3,7 @@ package worker
 import AbstractCommandManager
 import message.*
 import message.handler.AbstractMessageHandler
+import message.handler.HandlerException
 import message.handler.UnexpectedMessageTypeException
 
 class GCMessageHandler(
@@ -38,6 +39,8 @@ class GCMessageHandler(
             }
         }
 
-
+        if (!service.sendToServer(msg)) {
+            service.sendToClient(Response(msg.key, false, "Услуги сервиса пока недоступны"), case.key)
+        }
     }
 }

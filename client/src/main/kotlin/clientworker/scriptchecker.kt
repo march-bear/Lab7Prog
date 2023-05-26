@@ -6,7 +6,7 @@ import command.CommandArgument
 import exceptions.InvalidFieldValueException
 import exceptions.ScriptException
 import iostreamers.Reader
-import request.CommandInfo
+import message.CommandInfo
 import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.InputStreamReader

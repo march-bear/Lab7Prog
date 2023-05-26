@@ -14,9 +14,10 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
-import request.CommandInfo
-import request.Request
-import request.Response
+import message.CommandInfo
+import message.Message
+import message.Request
+import message.Response
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.SocketException
@@ -35,10 +36,11 @@ class ChannelClientWorker (
     private val remote = InetSocketAddress(serverHost, serverPort)
 
     private lateinit var sock: SocketChannel
-    private lateinit var receiver: AbstractReceiverWrapper<Response>
-    private lateinit var sender: AbstractSenderWrapper<Request>
+    private lateinit var receiver: AbstractReceiverWrapper<Message>
+    private lateinit var sender: AbstractSenderWrapper<Message>
 
     private val commandList: MutableList<CommandInfo> = mutableListOf()
+    private val localCommandList: MutableList<CommandInfo> = mutableListOf()
     internal var token: String? = null
 
     override fun start() {
@@ -57,16 +59,16 @@ class ChannelClientWorker (
         }
 
         Messenger.print("Проверка соединения...")
-        get<Task<ChannelClientWorker>>(named("check_connect")).execute(this)
+        get<Task<ChannelClientWorker>>(named("checkConnect")).execute(this)
 
         interactiveMode()
         exitProcess(0)
     }
 
-    private fun send(req: Request) {
+    private fun send(msg: Message) {
         while (true) {
             try {
-                sender.send(req)
+                sender.send(msg)
                 return
             } catch (ex: IOException) {
                 Messenger.print("\nВо время отправки запроса связь с сервером была потеряна!", TextColor.RED)
@@ -80,7 +82,7 @@ class ChannelClientWorker (
         }
     }
 
-    private fun receive(): Response? {
+    private fun receive(): Message? {
         while (true) {
             try {
                 return receiver.receive()
@@ -96,9 +98,9 @@ class ChannelClientWorker (
         }
     }
 
-    internal fun sendAndReceive(req: Request): Response? {
+    internal fun sendAndReceive(req: Request): Message? {
         send(req)
-        var response: Response?
+        var response: Message?
         val startTime = System.currentTimeMillis()
 
         while (System.currentTimeMillis() - startTime <= MAX_RESPONSE_TIME) {
@@ -127,24 +129,18 @@ class ChannelClientWorker (
             Messenger.inputPrompt(">>>", " ")
             val (name, args) = try { reader.readCommand()!! } catch (ex: NullPointerException) { break }
             try {
-                when (name) {
-                    "exit" -> get<Task<ChannelClientWorker>>(named("exit")) { parametersOf(args) }.execute(this)
-                    "help" ->  get<Task<ChannelClientWorker>>(named("help")) { parametersOf(args) }.execute(this)
-                    "execute_script" -> get<Task<ChannelClientWorker>>(named("execute_script")) { parametersOf(args) }.execute(this)
-                    "check_connect" -> get<Task<ChannelClientWorker>>(named("check_connect")) { parametersOf(args) }.execute(this)
-                    "update_command_list" -> get<Task<ChannelClientWorker>>(named("getCommandInfo")) { parametersOf(args) }.execute(this)
+                if {}
 
-                    else -> {
-                        val commandInfo = commandList.stream().filter { it.name == name }.findFirst().get()
-                        if (ArgumentType.ORGANIZATION in commandInfo.args)
-                            args.setOrganization(orgFactory.newOrganizationFromInput())
+                else {
+                    val commandInfo = commandList.stream().filter { it.name == name }.findFirst().get()
+                    if (ArgumentType.ORGANIZATION in commandInfo.args)
+                        args.setOrganization(orgFactory.newOrganizationFromInput())
 
-                        argValidatorFactory.getByCommandName(name)!!.check(args)
-                        val key = generateKey()
-                        val response = sendAndReceive(Request(name, key, args, token ?: ""))
-                        if (response != null)
-                            processResponse(response, key)
-                    }
+                    argValidatorFactory.getByCommandName(name)!!.check(args)
+                    val key = generateKey()
+                    val response = sendAndReceive(Request(name, key, args))
+                    if (response != null)
+                        processMessage(response, key)
                 }
             } catch (ex: NullPointerException) {
                 Messenger.print("$name: команда не найдена", TextColor.RED)
@@ -202,10 +198,16 @@ class ChannelClientWorker (
         commandList.addAll(newList)
     }
 
-    fun processResponse(response: Response, requestKey: String) {
-        if (response.requestKey == requestKey) {
-            Messenger.print(response.message, if (response.success) TextColor.BLUE else TextColor.RED)
-            for (task in response.necessaryTask?.split(' ') ?: listOf())
+    fun processMessage(msg: Message, requestKey: String) {
+        if (msg::class.java != Response::class.java) {
+            Messenger.print("Сообщение, полученное от сервера, не может быть обработано", TextColor.RED)
+            return
+        }
+
+        msg as Response
+        if (msg.key == requestKey) {
+            Messenger.print(msg.message, if (msg.success) TextColor.BLUE else TextColor.RED)
+            for (task in msg.necessaryTask?.split(' ') ?: listOf())
                 get<Task<ChannelClientWorker>>(named(task)).execute(this)
         } else {
             Messenger.print("Ответ сервера некорректен", TextColor.RED)

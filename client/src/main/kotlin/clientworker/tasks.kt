@@ -17,20 +17,22 @@ import kotlinx.serialization.json.Json
 import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
-import request.Request
-import java.lang.Exception
+import message.Request
+import message.Response
 import java.lang.IllegalArgumentException
 import java.util.*
 import kotlin.system.exitProcess
 
 val startTasks = module {
-    factory(named("check_connect")) {
+    factory(named("checkConnect")) {
         Task<ChannelClientWorker> {
             val key = generateKey()
-            val response = sendAndReceive(Request("check_connect", key, token = token ?: ""))
+            val args = CommandArgument()
+            args.setToken(token)
+            val response = sendAndReceive(Request(key, "check_connect", args))
                 ?: return@Task Messenger.print("Сервер не отвечает", TextColor.RED)
-
-            processResponse(response, key)
+            println("Ответ получен")
+            processMessage(response, key)
         }
     }
 
@@ -41,12 +43,15 @@ val startTasks = module {
             for (i in 1..5) {
                 Messenger.print("Попытка отправки запроса...")
                 val key = generateKey()
-                val response = sendAndReceive(Request("help", key, token = token ?: ""))
+                val args = CommandArgument()
+                args.setToken(token)
+                val response = sendAndReceive(Request(key, "help", args))
                     ?: return@Task Messenger.print("Сервер не отвечает", TextColor.RED)
 
                 Messenger.print("Ответ получен", TextColor.BLUE)
 
-                if (response.requestKey == key) {
+                if (response.key == key && response::class.java == Response::class.java) {
+                    response as Response
                     if (response.success) {
                         try {
                             updateCommandList(Json.decodeFromString(response.message))
@@ -82,7 +87,8 @@ val startTasks = module {
             val key = generateKey()
             val response = sendAndReceive(Request("log_in", key, CommandArgument(Json.encodeToString(Pair(login, passwd)))))
                 ?: return@Task Messenger.print("Сервер не отвечает", TextColor.RED)
-            if (response.requestKey == key) {
+            if (response.key == key && response::class.java == Response::class.java) {
+                response as Response
                 if (response.success) {
                     token = response.message
                     Messenger.print("Вход выполнен успешно. Токен: ${response.message}")
@@ -111,7 +117,8 @@ val startTasks = module {
             val key = generateKey()
             val response = sendAndReceive(Request("register", key, CommandArgument(Json.encodeToString(Pair(login, passwd)))))
                 ?: return@Task Messenger.print("Сервер не отвечает", TextColor.RED)
-            if (response.requestKey == key) {
+            if (response.key == key && response::class.java == Response::class.java) {
+                response as Response
                 if (response.success) {
                     token = response.message
                     Messenger.print("Регистрация прошла успешно. Токен: ${response.message}")
@@ -139,9 +146,11 @@ val startTasks = module {
             }
             for (i in 1..5) {
                 val key = generateKey()
-                val response = sendAndReceive(Request("check_token", key, token = token ?: ""))
+                val args = CommandArgument()
+                args.setToken(token)
+                val response = sendAndReceive(Request("check_token", key, args))
                 if (response != null) {
-                    processResponse(response, key)
+                    processMessage(response, key)
                     return@Task
                 }
 
@@ -149,7 +158,6 @@ val startTasks = module {
             }
 
             Messenger.print("Сервер не отвечает")
-            exitProcess(1)
         }
     }
 
@@ -216,6 +224,20 @@ val executeCommandTasks = module {
         }
     }
 
+    factory(named("check_connect")) {
+        (args: CommandArgument) ->
+        Task<ChannelClientWorker> {
+            ArgumentValidator(listOf()).check(args)
+            val key = generateKey()
+            args.setToken(token)
+            val response = sendAndReceive(Request(key, "check_token", args))
+            if (response != null) {
+                processMessage(response, key)
+                return@Task
+            }
+        }
+    }
+
     factory(named("execute_script")) {
             (args: CommandArgument) ->
         Task<ChannelClientWorker> {
@@ -240,8 +262,9 @@ val executeCommandTasks = module {
 
                     else -> {
                         val key = generateKey()
+                        command.second.setToken(token)
                         val response =
-                            sendAndReceive(Request(command.first, key, command.second, token = token ?: ""))
+                            sendAndReceive(Request(command.first, key, command.second))
                     }
                 }
             }

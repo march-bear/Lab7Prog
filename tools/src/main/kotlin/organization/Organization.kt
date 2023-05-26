@@ -66,6 +66,11 @@ class Organization() : Comparable<Organization> {
     @SerialName("typeOrg")
     var type: OrganizationType = OrganizationType.COMMERCIAL
     var postalAddress: Address? = null
+    var ownerId: Long = -1
+        set(value) {
+            field = value
+            validate(this) { validate(Organization::ownerId).isPositive() }
+        }
 
     fun objectIsValid(): Boolean = try {
         validate(this) {
@@ -73,6 +78,7 @@ class Organization() : Comparable<Organization> {
             validate(Organization::name).isNotEmpty()
             validate(Organization::annualTurnover).isPositive()
             validate(Organization::fullName).isValid { it.length in 0..925 }
+            validate(Organization::ownerId).isPositive()
         }
         true
     } catch (ex: ConstraintViolationException) { false }

@@ -2,7 +2,7 @@ import iostreamers.*
 import network.WorkerInterface
 import org.koin.core.context.GlobalContext.startKoin
 import org.koin.core.parameter.parametersOf
-import serverworker.StreamServerWorker
+import org.koin.core.qualifier.named
 
 fun main(args: Array<String>) {
     val app = startKoin {
@@ -14,8 +14,14 @@ fun main(args: Array<String>) {
 
     val r = Reader()
 
-    Messenger.inputPrompt("Введите порт для работы сервера")
-    val port = r.readPort(true) ?: return
+    Messenger.inputPrompt("Введите номер типа сервера (1 - автономный, 2 - подключаемый GatewayLBService)")
+    val sType = r.readOneOfValues(listOf("1", "2"))
+
+    var port: Int = -1
+    if (sType == "1") {
+        Messenger.inputPrompt("Введите порт для работы сервера")
+        port = r.readPort(true) ?: return
+    }
 
     Messenger.print("\nВведите данные для подключения к базе данных")
     Messenger.inputPrompt("Хост")
@@ -29,14 +35,37 @@ fun main(args: Array<String>) {
     Messenger.inputPrompt("Пароль")
     val dbUserPassword = r.readNotEmptyString() ?: return
 
-    val worker = app.koin.get<WorkerInterface> { parametersOf(
-        port,
-        dbHost,
-        dbPort,
-        dbName,
-        dbUserName,
-        dbUserPassword,
-    ) }
+    val worker: WorkerInterface
+    if (sType == "1") {
+        worker = app.koin.get(named("autonomic")) {
+            parametersOf(
+                port,
+                dbHost,
+                dbPort,
+                dbName,
+                dbUserName,
+                dbUserPassword,
+            )
+        }
+    } else {
+        Messenger.print("\nВведите данные для подключения к GatewayLBService")
+        Messenger.inputPrompt("Хост")
+        val host = r.readHost() ?: return
+        Messenger.inputPrompt("Порт")
+        port = r.readPort() ?: return
+
+        worker = app.koin.get(named("connectable")) {
+            parametersOf(
+                host,
+                port,
+                dbHost,
+                dbPort,
+                dbName,
+                dbUserName,
+                dbUserPassword,
+            )
+        }
+    }
 
     worker.start()
 }

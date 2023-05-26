@@ -1,13 +1,12 @@
 import message.*
+import worker.GatewayLBService
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.util.concurrent.PriorityBlockingQueue
 
 fun main(args: Array<String>) {
-    val queue = PriorityBlockingQueue(11, MessageComparator())
-    queue.put(Request("3", ""))
-    queue.put(Infarct("1", 1L, listOf()))
-    queue.put(Infarct("2", 2L, listOf()))
-
-    println(queue.take().key)
-    println(queue.take().key)
-    println(queue.take().key)
+    Thread {
+        val service = GatewayLBService(5555)
+        service.start()
+    }.start()
 }

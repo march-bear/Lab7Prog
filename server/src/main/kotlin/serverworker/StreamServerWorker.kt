@@ -1,19 +1,18 @@
 package serverworker
 
 import CollectionController
-import CommandManager
-import db.DataBaseManager
+import LoggerWrapper
+import db.manager.DataBaseManager
 import iostreamers.Messenger
+import message.Request
 import network.WorkerInterface
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
 import org.slf4j.LoggerFactory
-import java.io.File
 import java.io.IOException
 import java.net.ServerSocket
-import java.util.*
 import java.util.concurrent.*
 
 class StreamServerWorker(
@@ -46,7 +45,7 @@ class StreamServerWorker(
                     try {
                         while (true) {
                             val request = receiver.receive() ?: continue
-                            val response = cController.process(request)
+                            val response = cController.process(request as Request) // FIXME
                             sender.send(response)
                         }
                     } catch (ex: IOException) {
@@ -64,6 +63,8 @@ class StreamServerWorker(
                 break
             }
         }
+
+
     }
 
     private fun finish() {}

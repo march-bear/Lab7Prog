@@ -19,11 +19,12 @@ class RegisterAsServerCommand(
 
         val userWord = req.args.primArgs[0]
         if (service.superSecretWord == userWord) {
-            val (sock, _) = service.clientsMap[id]!!
-            service.clientsMap.remove(id)
-
-
+            val sender = service.clientsMap[id]?.second ?: throw Exception("Wow")
+            service.clientsMap[id] = Pair(SocketType.SERVER, sender)
+            service.workersList.add(sender)
+            return Response(req.key, true, "Welcome to Our Dream Team!")
         }
-        return Response(req.key, true, "Welcome to Our Dream Team!")
+
+        return Response(req.key, false, "Ты не знаешь секретное слово, чёрт")
     }
 }

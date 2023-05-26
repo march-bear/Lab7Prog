@@ -1,5 +1,6 @@
 package message
 
+import ChangeType
 import command.CommandArgument
 import kotlinx.serialization.Serializable
 
@@ -15,5 +16,5 @@ import kotlinx.serialization.Serializable
 data class Infarct(
     override val key: String,
     val number: Long,
-    val changes: List<Pair<String, CommandArgument>>,
+    val changes: List<Pair<ChangeType, CommandArgument>>,
 ) : Message()

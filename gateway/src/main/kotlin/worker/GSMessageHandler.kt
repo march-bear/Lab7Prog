@@ -8,9 +8,7 @@ class GSMessageHandler(
     private val service: GatewayLBService,
 ) : AbstractMessageHandler() {
     override fun processInfarct(inf: Infarct) {
-        for (serv in service.workersList) {
-            serv.second.send(inf)
-        }
+        service.sendToAllServers(inf)
 
         service.updatingInProgress = false
     }
@@ -24,6 +22,6 @@ class GSMessageHandler(
     }
 
     override fun processMessageCase(case: MessageCase) {
-
+        service.sendToClient(case.message, case.key)
     }
 }

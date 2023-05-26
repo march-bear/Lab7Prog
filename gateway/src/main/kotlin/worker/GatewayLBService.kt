@@ -3,13 +3,19 @@ package worker
 import AbstractCommandManager
 import CommandManager
 import MessageComparator
+import iostreamers.Messenger
+import iostreamers.TextColor
 import message.Infarct
 import network.WorkerInterface
 import message.Message
 import message.MessageCase
+import message.Request
 import registeringNewServerModule
+import java.io.IOException
+import java.lang.NullPointerException
 import java.net.ServerSocket
 import java.net.Socket
+import java.net.SocketTimeoutException
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
@@ -17,6 +23,8 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.PriorityBlockingQueue
+import java.util.concurrent.TimeoutException
+import javax.sql.ConnectionPoolDataSource
 
 class GatewayLBService(
     port: Int,
@@ -29,8 +37,8 @@ class GatewayLBService(
     internal val superSecretWord = "persik"
     private val serv: ServerSocket = ServerSocket(port)
 
-    internal val workersList: CopyOnWriteArrayList<Pair<Socket, TCPStreamSenderWrapper>> = CopyOnWriteArrayList()
-    internal val clientsMap: ConcurrentMap<String, Pair<Socket, TCPStreamSenderWrapper>> = ConcurrentHashMap()
+    internal val workersList: CopyOnWriteArrayList<TCPStreamSenderWrapper> = CopyOnWriteArrayList()
+    internal val clientsMap: ConcurrentMap<String, Pair<SocketType, TCPStreamSenderWrapper>> = ConcurrentHashMap()
     private val msgCQueue: BlockingQueue<Message> = LinkedBlockingQueue()
     private val msgSQueue: PriorityBlockingQueue<Message> = PriorityBlockingQueue(11, MessageComparator())
 
@@ -38,28 +46,52 @@ class GatewayLBService(
     private val clientMessageHandler = GCMessageHandler(this, commandManager)
     private val serverMessageHandler = GSMessageHandler(this)
 
-
     internal var updatingInProgress = false
     private var isRunning = false
     private var lastUpdate: Long = 0
 
     override fun start() {
+        Messenger.print("СТАРТУЕМ")
         isRunning = true
         val execReceive = Executors.newCachedThreadPool()
 
         Thread {
             while (isRunning) {
                 val sockKey = generateKey(20)
-                val sock = serv.accept()
 
-                clientsMap[sockKey] = Pair(sock, TCPStreamSenderWrapper(sock))
+                val sock = try {
+                    serv.accept()
+                } catch (ex: IOException) {
+                    break
+                }
+
+                println("Новая зараза $sockKey, Приветствуем!")
+                clientsMap[sockKey] = Pair(SocketType.CLIENT, TCPStreamSenderWrapper(sock))
 
                 execReceive.execute {
+                    sock.soTimeout = TIMEOUT_FOR_SOCKETS
                     val receiver = TCPStreamReceiverWrapper(sock)
-                    while (true) {
-                        val msg = receiver.receive() ?: continue
-                        msgCQueue.add(MessageCase(sockKey, msg))
+                    while (isRunning) {
+                        val msg = try {
+                            receiver.receive() ?: continue
+                        } catch (ex: IOException) {
+                            break
+                        } catch (ex: SocketTimeoutException) {
+                            when (clientsMap[sockKey]?.first) {
+                                SocketType.CLIENT, null -> break
+                                SocketType.SERVER -> continue
+                            }
+                        }
+
+                        when (clientsMap[sockKey]?.first) {
+                            SocketType.CLIENT -> msgCQueue.add(MessageCase(sockKey, msg))
+                            SocketType.SERVER -> msgSQueue.add(msg)
+                            null -> break
+                        }
                     }
+
+                    try { sock.close() } catch (_: IOException) {}
+                    println("Нас покинул $sockKey")
                 }
             }
         }.start()
@@ -70,14 +102,16 @@ class GatewayLBService(
             while (isRunning) {
                 if (!updatingInProgress)
                     execHandle.execute {
-                        clientMessageHandler.process(msgCQueue.take())
+                        try {
+                            clientMessageHandler.process(msgCQueue.poll())
+                        } catch (_: NullPointerException) {}
                     }
             }
         }.start()
 
         Thread {
             while (isRunning) {
-                if (msgSQueue.peek()::class.java == Infarct::class.java) {
+                if ((msgSQueue.peek() ?: continue)::class.java == Infarct::class.java) {
                     updatingInProgress = true
                     if ((msgSQueue.peek() as Infarct).number - 1 != lastUpdate) {
                         continue
@@ -85,8 +119,11 @@ class GatewayLBService(
                         ++lastUpdate
                     }
                 }
+
                 execHandle.execute {
-                    serverMessageHandler.process(msgSQueue.take())
+                    try {
+                        serverMessageHandler.process(msgSQueue.poll())
+                    } catch (_: NullPointerException) {}
                 }
             }
         }.start()
@@ -96,9 +133,14 @@ class GatewayLBService(
             if (cmd == "exit" || cmd == null)
                 isRunning = false
         }
+
+        serv.close()
+        execHandle.shutdown()
+        execReceive.shutdown()
+        Messenger.print("Завершение работы сервиса...", TextColor.YELLOW)
     }
 
-    private fun getNextWorker(): Pair<Socket, TCPStreamSenderWrapper>? {
+    private fun getNextWorker(): TCPStreamSenderWrapper? {
         while (true) {
             if (workersList.isEmpty())
                 return null
@@ -110,17 +152,54 @@ class GatewayLBService(
         }
     }
 
+    private fun deleteWorkerBySender(sender: TCPStreamSenderWrapper) {
+        workersList.remove(sender)
+        clientsMap.values.removeIf { it.second == sender }
+    }
+
     fun sendToServer(msg: Message): Boolean {
-        getNextWorker()?.second?.send(msg) ?: return false
-        return true
+        while (true) {
+            val sender = getNextWorker() ?: return false
+            try {
+                sender.send(msg)
+                return true
+            } catch (_: IOException) {
+                deleteWorkerBySender(sender)
+            }
+        }
     }
 
     fun sendToAllServers(msg: Message) {
+        val workersToDelete = mutableListOf<TCPStreamSenderWrapper>()
         workersList.forEach {
-            it.second.send(msg)
+            try {
+                it.send(msg)
+            } catch (_: IOException) {
+                workersToDelete.add(it)
+            }
         }
+
+        workersToDelete.forEach { deleteWorkerBySender(it) }
+    }
+
+    fun sendToClient(msg: Message, cid: String) {
+        val client = clientsMap[cid]
+        try {
+            client?.second?.send(msg)
+        } catch (_: IOException) {
+            clientsMap.remove(cid)
+        }
+    }
+
+    private companion object {
+        const val TIMEOUT_FOR_SOCKETS = 300000
     }
 }
 
 fun generateKey(length: Int): String = CharArray(length) { validChars.random() }.concatToString()
 val validChars: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
+
+enum class SocketType {
+    CLIENT,
+    SERVER,
+}

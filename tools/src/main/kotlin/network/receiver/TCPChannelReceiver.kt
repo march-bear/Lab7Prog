@@ -9,17 +9,18 @@ class TCPChannelReceiver(private val sock: SocketChannel): ReceiverInterface {
 
     override fun receive(): String {
         msgLenBuf.clear()
-        while (sock.read(msgLenBuf) > 0) {}
+        sock.read(msgLenBuf)
         msgLenBuf.flip()
         val len = msgLenBuf.int
         msgLenBuf.array().toList()
         msgBuf.clear()
         msgBuf.limit(len)
-        while (sock.read(msgBuf) > 0) { }
+        sock.read(msgBuf)
         msgBuf.flip()
 
         val msgArr = ByteArray(msgBuf.remaining())
         msgBuf.get(msgArr)
+        println(String(msgArr))
         return String(msgArr)
     }
 }
