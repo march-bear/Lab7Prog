@@ -1,7 +1,6 @@
 package command
 
 import message.Request
-import message.Response
 
 /**
  * Интерфейс, реализуемый всеми классами команд
@@ -22,5 +21,5 @@ interface Command {
      * Исполняет команду
      * @param req аргументы, подаваемые с командой, представленные строкой
      */
-    fun execute(req: Request): Response
+    fun execute(req: Request): CommandResult
 }

@@ -1,12 +1,13 @@
-package command.implementations
+package commands
 
 import collection.CollectionWrapper
 import command.Command
+import command.CommandResult
 import iostreamers.Messenger
 import iostreamers.TextColor
 import organization.Organization
-import request.Request
-import request.Response
+import message.Request
+import message.Response
 
 class SumOfEmployeesCountCommand(
     private val collection: CollectionWrapper<Organization>,
@@ -14,17 +15,17 @@ class SumOfEmployeesCountCommand(
     override val info: String
         get() = "вывести сумму значений поля employeesCount для всех элементов коллекции"
 
-    override fun execute(req: Request): Response {
+    override fun execute(req: Request): CommandResult {
         argumentValidator.check(req.args)
 
         if (collection.isEmpty())
-            return Response(true, "Коллекция пуста", req.key)
+            return CommandResult(Response(req.key, true, "Коллекция пуста"))
 
         val sum = collection.stream().mapToLong { it.employeesCount ?: 0 }.sum()
 
         val output = Messenger.message("Общее количество работников во всех организациях: ") +
                 Messenger.message("$sum", TextColor.BLUE)
 
-        return Response(true, output, req.key)
+        return CommandResult(Response(req.key, true, output))
     }
 }

@@ -45,7 +45,7 @@ class StreamServerWorker(
                     try {
                         while (true) {
                             val request = receiver.receive() ?: continue
-                            val response = cController.process(request as Request) // FIXME
+                            val (response, infarct) = cController.process(request as Request) // Косяк
                             sender.send(response)
                         }
                     } catch (ex: IOException) {

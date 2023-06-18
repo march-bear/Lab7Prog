@@ -20,7 +20,7 @@ class CommandManager(
     }
 
     fun getCommand(name: String): Command? = try {
-            koinApp.koin.get(named(name)) { parametersOf(dbManager, controller, collection) }
+            koinApp.koin.get(named(name)) { parametersOf(collection, dbManager, controller) }
         } catch (ex: NoBeanDefFoundException) {
             null
         }

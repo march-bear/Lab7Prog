@@ -3,14 +3,13 @@ package worker
 import AbstractCommandManager
 import message.*
 import message.handler.AbstractMessageHandler
-import message.handler.HandlerException
 import message.handler.UnexpectedMessageTypeException
 
 class GCMessageHandler(
     private val service: GatewayLBService,
     private val commandManager: AbstractCommandManager,
 ) : AbstractMessageHandler() {
-    override fun processInfarct(inf: Infarct) {
+    override fun processInfarct(inf: DataBaseChanges) {
         throw UnexpectedMessageTypeException("Неожиданный тип сообщения")
     }
 
@@ -27,19 +26,20 @@ class GCMessageHandler(
         when (msg::class.java) {
             Request::class.java -> {
                 msg as Request
-                val command = commandManager.getCommandForUser(msg.key, case.key)
+                println(msg)
+                val command = commandManager.getCommandForUser(msg.name, case.key)
                 if (command != null) {
                     command.execute(msg)
                     return
                 }
             }
-            Infarct::class.java -> {
-                processInfarct(msg as Infarct)
+            DataBaseChanges::class.java -> {
+                processInfarct(msg as DataBaseChanges)
                 return
             }
         }
 
-        if (!service.sendToServer(msg)) {
+        if (!service.sendToServer(case)) {
             service.sendToClient(Response(msg.key, false, "Услуги сервиса пока недоступны"), case.key)
         }
     }

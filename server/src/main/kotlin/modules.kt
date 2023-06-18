@@ -2,6 +2,7 @@ import collection.CollectionWrapper
 import command.ArgumentType
 import command.ArgumentValidator
 import command.Command
+import command.CommandResult
 import commands.*
 import db.manager.DataBaseManager
 import db.manager.checkToken
@@ -15,31 +16,42 @@ import message.CommandInfo
 import message.Request
 import message.Response
 import organization.Organization
+import serverworker.GStreamServerWorker
 import serverworker.StreamServerWorker
 import java.util.*
 
 val qualifiers = listOf(
     "add",
+    "remove_by_id",
     "hack",
-    "disconnect",
-    "group_counting_by_employees_count",
     "clear",
+    "group_counting_by_employees_count",
+    "info",
+    "print_unique_postal_address",
+    "show",
+    "sum_of_employees_count",
+    "disconnect",
 )
 
 val commandModule = module {
     single<Command>(named("help")) {
-            (dbManager: DataBaseManager, cController: CollectionController) ->
+            (collection: CollectionWrapper<Organization>, dbManager: DataBaseManager, cController: CollectionController) ->
         val commandInfos = mutableListOf<CommandInfo>()
         for (qualifier in qualifiers) {
-            val command = get<Command>(named(qualifier)) { parametersOf(dbManager, cController) }
+            val command = get<Command>(named(qualifier)) { parametersOf(collection, dbManager, cController) }
             commandInfos.add(CommandInfo(qualifier, command.info, command.argumentValidator.argumentTypes))
         }
 
-        HelpCommand(commandInfos)
+        HelpCommand(dbManager, commandInfos)
     }
 
     factory<Command>(named("add")) {
-        (dbManager: DataBaseManager) -> AddCommand(dbManager)
+        (_: CollectionWrapper<Organization>, dbManager: DataBaseManager) -> AddCommand(dbManager)
+    }
+
+    factory<Command>(named("remove_by_id")) {
+            (_:CollectionWrapper<Organization>, dbManager: DataBaseManager) ->
+        RemoveByIdCommand(dbManager)
     }
 
     single<Command>(named("hack")) {
@@ -47,12 +59,12 @@ val commandModule = module {
             override val info: String
                 get() = "ꃅꍏꉓꀘ ꌩꂦꀎ (Это какой-то баг, не обращай внимание)"
 
-            override fun execute(req: Request): Response {
-                return Response(req.key, true, Messenger.whatThe())
+            override fun execute(req: Request): CommandResult {
+                return CommandResult(Response(req.key, true, Messenger.whatThe()))
             }
         }
     }
-    factory<Command>(named("clear")) { (dbManager: DataBaseManager) -> ClearCommand(dbManager) }
+    factory<Command>(named("clear")) { (_: CollectionWrapper<Organization>, dbManager: DataBaseManager) -> ClearCommand(dbManager) }
 
     single<Command>(named("group_counting_by_employees_count")) {
             (collection: CollectionWrapper<Organization>) -> GroupCountingByEmployeesCountCommand(collection)
@@ -74,36 +86,40 @@ val commandModule = module {
             (collection: CollectionWrapper<Organization>) -> SumOfEmployeesCountCommand(collection)
     }
 
-    factory<Command>(named("disconnect")) { (dbManager: DataBaseManager) -> DisconnectCommand(dbManager) }
-    single<Command>(named("check_token")) { (dbManager: DataBaseManager) -> CheckTokenCommand(dbManager) }
-    factory<Command>(named("log_in")) { (dbManager: DataBaseManager) -> LogInCommand(dbManager) }
-    factory<Command>(named("register")) { (dbManager: DataBaseManager) -> RegisterCommand(dbManager) }
+    factory<Command>(named("disconnect")) { (_: CollectionWrapper<Organization>, dbManager: DataBaseManager) -> DisconnectCommand(dbManager) }
+    single<Command>(named("check_token")) { (_: CollectionWrapper<Organization>, dbManager: DataBaseManager) -> CheckTokenCommand(dbManager) }
+    factory<Command>(named("log_in")) { (_: CollectionWrapper<Organization>, dbManager: DataBaseManager) -> LogInCommand(dbManager) }
+    factory<Command>(named("register")) { (_: CollectionWrapper<Organization>, dbManager: DataBaseManager) -> RegisterCommand(dbManager) }
 
-    single<Command>(named("check_connect")) {(dbManager: DataBaseManager) ->
+    single<Command>(named("check_connect")) {(_: CollectionWrapper<Organization>, dbManager: DataBaseManager) ->
         object : Command {
             override val info: String
                 get() = "Проверить соединение"
 
             override val argumentValidator = ArgumentValidator(listOf(ArgumentType.TOKEN))
 
-            override fun execute(req: Request): Response {
+            override fun execute(req: Request): CommandResult {
                 argumentValidator.check(req.args)
                 val validToken = dbManager.checkToken(req.args.token!!)
-                return Response(
+                    ?: return CommandResult(
+                        Response(req.key, false, "Не удалось обработать запрос")
+                    )
+                return CommandResult(Response(
                     req.key,
                     true,
                     "Good connection! Запрос обработан: ${Date(System.currentTimeMillis())}",
                     if (validToken) null else "identify",
-                )
+                ))
             }
         }
     }
 }
 
 operator fun <T> ParametersHolder.component6(): T = get(5)
+operator fun <T> ParametersHolder.component7(): T = get(6)
 
 val serverWorkerModule = module {
-    single<WorkerInterface> {
+    single<WorkerInterface>(named("autonomic")) {
             (
                 port: Int,
                 dbHost: String,
@@ -113,6 +129,19 @@ val serverWorkerModule = module {
                 dbUserPassword: String,
             ) ->
         StreamServerWorker(port, dbHost, dbPort, dbName, dbUserName, dbUserPassword)
+    }
+
+    single<WorkerInterface>(named("connectable")) {
+            (
+                host: String,
+                port: Int,
+                dbHost: String,
+                dbPort: Int,
+                dbName: String,
+                dbUserName: String,
+                dbUserPassword: String,
+            ) ->
+        GStreamServerWorker(host, port, dbHost, dbPort, dbName, dbUserName, dbUserPassword)
     }
 }
 

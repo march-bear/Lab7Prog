@@ -10,8 +10,8 @@ class ArgumentValidator(
 ) {
     init {
         if (argumentTypes != argumentTypes.sorted())
-            throw IllegalArgumentException("Описание аргументов команды должно идти в порядке: TOKEN -> INT -> LONG -> " +
-                    "FLOAT -> DOUBLE -> STRING -> ORGANIZATION.\n" +
+            throw IllegalArgumentException("Описание аргументов команды должно идти в порядке: INT -> LONG -> " +
+                    "FLOAT -> DOUBLE -> STRING -> ORGANIZATION -> TOKEN.\n" +
                     "Обратитесь к разработчику для разъяснения ситуации: dakako@go4rta.com")
 
         else if (argumentTypes.count { it == ArgumentType.ORGANIZATION } > 1)
@@ -24,26 +24,25 @@ class ArgumentValidator(
         for (type in argumentTypes) {
             try {
                 when (type) {
-                    ArgumentType.TOKEN -> args.token ?: throw NullPointerException()
                     ArgumentType.INT -> args.primArgs[counter].toInt()
                     ArgumentType.LONG -> args.primArgs[counter].toLong()
                     ArgumentType.FLOAT -> args.primArgs[counter].toFloat()
                     ArgumentType.DOUBLE -> args.primArgs[counter].toDouble()
                     ArgumentType.STRING -> args.primArgs[counter]
                     ArgumentType.ORGANIZATION -> args.organization ?: throw NullPointerException()
+                    ArgumentType.TOKEN -> args.token ?: throw NullPointerException()
                 }
             } catch (ex: NumberFormatException) {
                 throw InvalidArgumentsForCommandException("${args.primArgs[counter]}: " +
                         "аргумент не удовлетворяет условию type=$type")
             } catch (ex: NullPointerException) {
                 throw InvalidArgumentsForCommandException(("Аргумент $type - не найден"))
-            } catch (ex: ScriptException) {
-                throw InvalidArgumentsForCommandException("Ошибка во время проверки скрипта:\n${ex.message}")
             }
+
             counter++
         }
 
-        if (counter != (args.primArgs.size + if(args.organization != null) 1 else 0))
+        if (counter != (args.primArgs.size + (if(args.organization != null) 1 else 0) + (if(args.token != null) 1 else 0)))
             throw InvalidArgumentsForCommandException("${args.primArgs[counter]}: неизвестный аргумент")
     }
 

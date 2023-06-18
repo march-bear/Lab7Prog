@@ -94,16 +94,30 @@ class Organization() : Comparable<Organization> {
         this.postalAddress = postalAddress
     }
 
+    constructor(id: Long, name: String, date: Date, coordinates: Coordinates, annualTurnover: Int, fullName: String?,
+                employeesCount: Long?, type: OrganizationType, postalAddress: Address?, ownerId: Long) : this() {
+        this.id = id
+        this.name = name
+        this.creationDate = date
+        this.coordinates = coordinates
+        this.annualTurnover = annualTurnover
+        this.fullName = fullName
+        this.employeesCount = employeesCount
+        this.type = type
+        this.postalAddress = postalAddress
+        this.ownerId = ownerId
+    }
+
     override fun toString(): String {
         return "${String.format("%-25s", "ID:")}\u001B[34m$id\u001B[39m\n" +
                 "${String.format("%-25s", "Название организации:")}\u001B[34m$name\u001B[39m\n" +
                 "${String.format("%-25s", "Координаты:")}\u001B[34m$coordinates\u001B[39m\n" +
-                "${String.format("%-25s","Дата создания:")}\u001B[34m$creationDate\u001B[39m\n" +
-                "${String.format("%-25s","Годовой оборот:")}\u001B[34m$annualTurnover\u001B[39m\n" +
-                "${String.format("%-25s","Полное имя:")}\u001B[34m$fullName\u001B[39m\n" +
-                "${String.format("%-25s","Количество сотрудников:")}\u001B[34m$employeesCount\u001B[39m\n" +
-                "${String.format("%-25s","Тип:")}\u001B[34m$type\u001B[39m\n" +
-                "${String.format("%-25s","Почтовый адрес:")}\u001B[34m$postalAddress\u001B[39m"
+                "${String.format("%-25s", "Дата создания:")}\u001B[34m$creationDate\u001B[39m\n" +
+                "${String.format("%-25s", "Годовой оборот:")}\u001B[34m$annualTurnover\u001B[39m\n" +
+                "${String.format("%-25s", "Полное имя:")}\u001B[34m$fullName\u001B[39m\n" +
+                "${String.format("%-25s", "Количество сотрудников:")}\u001B[34m$employeesCount\u001B[39m\n" +
+                "${String.format("%-25s", "Тип:")}\u001B[34m$type\u001B[39m\n" +
+                "${String.format("%-25s", "Почтовый адрес:")}\u001B[34m$postalAddress\u001B[39m"
     }
 
     override fun compareTo(other: Organization): Int {

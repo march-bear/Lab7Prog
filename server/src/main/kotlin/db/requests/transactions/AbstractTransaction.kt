@@ -1,8 +1,8 @@
 package db.requests.transactions
 
-import message.Infarct
+import message.DataBaseChanges
 import java.sql.Connection
 
 abstract class AbstractTransaction {
-    abstract fun execute(conn: Connection): Infarct?
+    abstract fun execute(conn: Connection): DataBaseChanges
 }

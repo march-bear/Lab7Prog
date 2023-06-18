@@ -1,25 +1,26 @@
-package command.implementations
+package commands
 
 import command.Command
+import command.CommandResult
 import exceptions.InvalidArgumentsForCommandException
-import request.Request
-import request.Response
+import message.Request
+import message.Response
 
 class HackSystemCommand : Command {
     override val info: String
         get() = "взломать систему"
 
-    override fun execute(req: Request): Response {
+    override fun execute(req: Request): CommandResult {
         try {
             argumentValidator.check(req.args)
         } catch (ex: InvalidArgumentsForCommandException) {
-            return Response(
+            return CommandResult(Response(
+                req.key,
                 true,
                 "К черту аргументы, чел, введи все нормально",
-                req.key,
-            )
+            ))
         }
 
-        return Response(true, "Break a (your) leg, imp!", req.key, "breakALeg")
+        return CommandResult(Response(req.key, true, "Break a (your) leg, imp!", "breakALeg"))
     }
 }

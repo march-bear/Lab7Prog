@@ -9,5 +9,6 @@ class TCPStreamSender(private val sock: Socket) : SenderInterface {
         val lenMsg = msg.toByteArray().size
         val arrMsg = ByteBuffer.allocate(4).putInt(lenMsg).array() + msg.toByteArray()
         stream.write(arrMsg)
+
     }
 }

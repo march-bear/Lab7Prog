@@ -1,7 +1,10 @@
 import collection.CollectionWrapper
 import collection.LinkedListWrapper
+import command.CommandResult
+import commands.UpdateLocalCollectionCommand
 import db.manager.DataBaseManager
 import exceptions.InvalidArgumentsForCommandException
+import iostreamers.Messenger
 import message.*
 import message.handler.HandlerException
 import org.koin.core.component.KoinComponent
@@ -17,22 +20,25 @@ class CollectionController(
     private val commandManager: CommandManager = get { parametersOf(dbManager, this, collection) }
 
     init {
+        Messenger.print("Инициализация таблиц...")
         dbManager.initTables()
+        Messenger.print("Загрузка коллекции...")
+        UpdateLocalCollectionCommand(collection, dbManager).execute(Request("", ""))
     }
 
-    fun process(req: Request) : Message {
+    fun process(req: Request) : CommandResult {
         val command = commandManager.getCommand(req.name)
-            ?: return Response(req.key, false, "${req.name}: неизвестная команда")
+            ?: return CommandResult(Response(req.key, false, "${req.name}: неизвестная команда"))
 
         return try {
             command.execute(req)
         } catch (ex: InvalidArgumentsForCommandException) {
-            Response(req.key, false, ex.message ?: "")
+            CommandResult(Response(req.key, false, ex.message ?: ""))
         }
     }
 
     @Synchronized
-    fun updateLocalCollection(inf: Infarct) {
+    fun updateLocalCollection(inf: DataBaseChanges) {
         for ((type, args) in inf.changes) {
             when (type) {
                 ChangeType.INSERT -> {

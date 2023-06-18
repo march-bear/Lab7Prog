@@ -85,7 +85,7 @@ val startTasks = module {
             val passwd = r.readNotEmptyString() ?: exitProcess(0)
 
             val key = generateKey()
-            val response = sendAndReceive(Request("log_in", key, CommandArgument(Json.encodeToString(Pair(login, passwd)))))
+            val response = sendAndReceive(Request(key, "log_in", CommandArgument(Json.encodeToString(Pair(login, passwd)))))
                 ?: return@Task Messenger.print("Сервер не отвечает", TextColor.RED)
             if (response.key == key && response::class.java == Response::class.java) {
                 response as Response
@@ -115,7 +115,7 @@ val startTasks = module {
             val passwd = r.readNotEmptyString() ?: exitProcess(0)
 
             val key = generateKey()
-            val response = sendAndReceive(Request("register", key, CommandArgument(Json.encodeToString(Pair(login, passwd)))))
+            val response = sendAndReceive(Request(key, "register", CommandArgument(Json.encodeToString(Pair(login, passwd)))))
                 ?: return@Task Messenger.print("Сервер не отвечает", TextColor.RED)
             if (response.key == key && response::class.java == Response::class.java) {
                 response as Response
@@ -148,7 +148,7 @@ val startTasks = module {
                 val key = generateKey()
                 val args = CommandArgument()
                 args.setToken(token)
-                val response = sendAndReceive(Request("check_token", key, args))
+                val response = sendAndReceive(Request(key, "check_token", args))
                 if (response != null) {
                     processMessage(response, key)
                     return@Task
@@ -195,20 +195,10 @@ val executeCommandTasks = module {
         Task<ChannelClientWorker> {
             ArgumentValidator(listOf()).check(args)
 
-            Messenger.print(String.format("%-40s", "help:"), newLine = false)
-            Messenger.print("вывести список доступных команд", TextColor.BLUE)
-
-            Messenger.print(String.format("%-40s", "exit:"), newLine = false)
-            Messenger.print("завершить работу клиента", TextColor.BLUE)
-
-            Messenger.print(String.format("%-40s", "execute_script:"), newLine = false)
-            Messenger.print("исполнить скрипт", TextColor.BLUE)
-
-            Messenger.print(String.format("%-40s", "check_connect:"), newLine = false)
-            Messenger.print("проверить соединение", TextColor.BLUE)
-
-            Messenger.print(String.format("%-40s", "update_command_list:"), newLine = false)
-            Messenger.print("обновить список команд", TextColor.BLUE)
+            for (commandInfo in getLocalCommandList()) {
+                Messenger.print(String.format("%-40s", "${commandInfo.name}:"), newLine = false)
+                Messenger.print(commandInfo.info, TextColor.BLUE)
+            }
 
             for (commandInfo in getCommandList()) {
                 Messenger.print(String.format("%-40s", "${commandInfo.name}:"), newLine = false)
@@ -230,13 +220,22 @@ val executeCommandTasks = module {
             ArgumentValidator(listOf()).check(args)
             val key = generateKey()
             args.setToken(token)
-            val response = sendAndReceive(Request(key, "check_token", args))
+            val response = sendAndReceive(Request(key, "check_connect", args))
             if (response != null) {
                 processMessage(response, key)
                 return@Task
             }
         }
     }
+
+    factory(named("update_command_list")) {
+            (args: CommandArgument) ->
+        Task<ChannelClientWorker> {
+            ArgumentValidator(listOf()).check(args)
+            get<Task<ChannelClientWorker>>(named("getCommandInfo")).execute(this)
+        }
+    }
+
 
     factory(named("execute_script")) {
             (args: CommandArgument) ->
@@ -255,7 +254,7 @@ val executeCommandTasks = module {
 
             for (command in requestList) {
                 when (command.first) {
-                    "exit", "help", "execute_script" ->
+                    in getLocalCommandList().stream().map { it.name }.toList() ->
                         get<Task<ChannelClientWorker>>(named(command.first)) { parametersOf(command.second) }.execute(
                             this
                         )
@@ -264,7 +263,7 @@ val executeCommandTasks = module {
                         val key = generateKey()
                         command.second.setToken(token)
                         val response =
-                            sendAndReceive(Request(command.first, key, command.second))
+                            sendAndReceive(Request(key, command.first, command.second))
                     }
                 }
             }

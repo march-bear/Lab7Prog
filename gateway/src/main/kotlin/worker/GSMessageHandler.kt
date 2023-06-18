@@ -7,10 +7,11 @@ import message.handler.UnexpectedMessageTypeException
 class GSMessageHandler(
     private val service: GatewayLBService,
 ) : AbstractMessageHandler() {
-    override fun processInfarct(inf: Infarct) {
+    override fun processInfarct(inf: DataBaseChanges) {
         service.sendToAllServers(inf)
 
         service.updatingInProgress = false
+        println("Отправка уведомлений осуществлена")
     }
 
     override fun processRequest(req: Request) {

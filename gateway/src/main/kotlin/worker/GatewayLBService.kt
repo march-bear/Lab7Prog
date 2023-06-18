@@ -2,19 +2,18 @@ package worker
 
 import AbstractCommandManager
 import CommandManager
-import MessageComparator
+import generateKey
+import message.MessageComparator
 import iostreamers.Messenger
 import iostreamers.TextColor
-import message.Infarct
+import message.DataBaseChanges
 import network.WorkerInterface
 import message.Message
 import message.MessageCase
-import message.Request
 import registeringNewServerModule
 import java.io.IOException
 import java.lang.NullPointerException
 import java.net.ServerSocket
-import java.net.Socket
 import java.net.SocketTimeoutException
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
@@ -23,13 +22,10 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.PriorityBlockingQueue
-import java.util.concurrent.TimeoutException
-import javax.sql.ConnectionPoolDataSource
 
 class GatewayLBService(
     port: Int,
 ) : WorkerInterface {
-
     @get:Synchronized
     @set:Synchronized
     private var currWorker: Int = 0
@@ -46,9 +42,15 @@ class GatewayLBService(
     private val clientMessageHandler = GCMessageHandler(this, commandManager)
     private val serverMessageHandler = GSMessageHandler(this)
 
+    @get:Synchronized
+    @set:Synchronized
     internal var updatingInProgress = false
+
     private var isRunning = false
-    private var lastUpdate: Long = 0
+
+    @get:Synchronized
+    @set:Synchronized
+    internal var lastUpdate: Long = -1
 
     override fun start() {
         Messenger.print("СТАРТУЕМ")
@@ -100,30 +102,39 @@ class GatewayLBService(
 
         Thread {
             while (isRunning) {
-                if (!updatingInProgress)
-                    execHandle.execute {
-                        try {
-                            clientMessageHandler.process(msgCQueue.poll())
-                        } catch (_: NullPointerException) {}
+                if (!updatingInProgress) {
+                    val msg = msgCQueue.poll()
+                    if (msg != null) {
+                        execHandle.execute {
+                            clientMessageHandler.process(msg)
+                        }
                     }
+                }
             }
         }.start()
 
         Thread {
             while (isRunning) {
-                if ((msgSQueue.peek() ?: continue)::class.java == Infarct::class.java) {
+                if (updatingInProgress) continue
+
+                if ((msgSQueue.peek() ?: continue)::class.java == DataBaseChanges::class.java) {
                     updatingInProgress = true
-                    if ((msgSQueue.peek() as Infarct).number - 1 != lastUpdate) {
+
+                    while ((msgSQueue.peek() as DataBaseChanges).number - 1 != lastUpdate) {
+                        println("$lastUpdate ${(msgSQueue.peek() as DataBaseChanges).number - 1}")
+                        Thread.sleep(300)
                         continue
-                    } else {
-                        ++lastUpdate
                     }
+                    ++lastUpdate
                 }
 
+                val msg = msgSQueue.poll()
                 execHandle.execute {
                     try {
-                        serverMessageHandler.process(msgSQueue.poll())
-                    } catch (_: NullPointerException) {}
+                        serverMessageHandler.process(msg)
+                    } catch (_: NullPointerException) {
+
+                    }
                 }
             }
         }.start()
@@ -141,6 +152,7 @@ class GatewayLBService(
     }
 
     private fun getNextWorker(): TCPStreamSenderWrapper? {
+        println(workersList)
         while (true) {
             if (workersList.isEmpty())
                 return null
@@ -192,12 +204,9 @@ class GatewayLBService(
     }
 
     private companion object {
-        const val TIMEOUT_FOR_SOCKETS = 300000
+        const val TIMEOUT_FOR_SOCKETS = 3000000
     }
 }
-
-fun generateKey(length: Int): String = CharArray(length) { validChars.random() }.concatToString()
-val validChars: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
 
 enum class SocketType {
     CLIENT,

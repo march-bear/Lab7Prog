@@ -5,7 +5,7 @@ import message.handler.AbstractMessageHandler
 import message.handler.UnexpectedMessageTypeException
 
 class ServerMessageHandler : AbstractMessageHandler() {
-    override fun processInfarct(inf: Infarct) {
+    override fun processInfarct(inf: DataBaseChanges) {
         throw UnexpectedMessageTypeException("Обработка сообщения типа RequestCase невозможна")
     }
 

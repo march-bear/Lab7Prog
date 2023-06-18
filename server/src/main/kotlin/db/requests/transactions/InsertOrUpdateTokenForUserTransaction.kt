@@ -1,10 +1,10 @@
 package db.requests.transactions
 
-import message.Infarct
+import message.DataBaseChanges
 import java.sql.Connection
 
 class InsertOrUpdateTokenForUserTransaction : AbstractTransaction() {
-    override fun execute(conn: Connection): Infarct? {
+    override fun execute(conn: Connection): DataBaseChanges {
         TODO("Not yet implemented")
     }
 }

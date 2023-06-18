@@ -19,8 +19,10 @@ fun main(args: Array<String>) {
 
     var port: Int = -1
     if (sType == "1") {
-        Messenger.inputPrompt("Введите порт для работы сервера")
-        port = r.readPort(true) ?: return
+        Messenger.print("Уже недоступно", TextColor.RED)
+        return
+        // Messenger.inputPrompt("Введите порт для работы сервера")
+        // port = r.readPort(true) ?: return
     }
 
     Messenger.print("\nВведите данные для подключения к базе данных")
@@ -36,25 +38,13 @@ fun main(args: Array<String>) {
     val dbUserPassword = r.readNotEmptyString() ?: return
 
     val worker: WorkerInterface
-    if (sType == "1") {
-        worker = app.koin.get(named("autonomic")) {
-            parametersOf(
-                port,
-                dbHost,
-                dbPort,
-                dbName,
-                dbUserName,
-                dbUserPassword,
-            )
-        }
-    } else {
-        Messenger.print("\nВведите данные для подключения к GatewayLBService")
-        Messenger.inputPrompt("Хост")
-        val host = r.readHost() ?: return
-        Messenger.inputPrompt("Порт")
-        port = r.readPort() ?: return
+    Messenger.print("\nВведите данные для подключения к GatewayLBService")
+    Messenger.inputPrompt("Хост")
+    val host = r.readHost() ?: return
+    Messenger.inputPrompt("Порт")
+    port = r.readPort() ?: return
 
-        worker = app.koin.get(named("connectable")) {
+    worker = app.koin.get(named("connectable")) {
             parametersOf(
                 host,
                 port,
@@ -65,7 +55,6 @@ fun main(args: Array<String>) {
                 dbUserPassword,
             )
         }
-    }
 
     worker.start()
 }

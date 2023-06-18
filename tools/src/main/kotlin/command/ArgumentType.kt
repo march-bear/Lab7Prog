@@ -5,12 +5,12 @@ package command
  */
 
 enum class ArgumentType {
-    TOKEN, // уникальный токен клиента
     INT,
     LONG,
     FLOAT,
     DOUBLE,
     STRING,
     ORGANIZATION, // объект класса Organization
+    TOKEN, // уникальный токен клиента
 }
 

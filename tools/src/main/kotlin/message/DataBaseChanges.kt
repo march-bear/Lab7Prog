@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
  */
 
 @Serializable
-data class Infarct(
+data class DataBaseChanges(
     override val key: String,
     val number: Long,
     val changes: List<Pair<ChangeType, CommandArgument>>,

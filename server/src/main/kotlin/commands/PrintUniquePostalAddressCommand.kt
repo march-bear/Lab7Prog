@@ -1,12 +1,13 @@
-package command.implementations
+package commands
 
 import collection.CollectionWrapper
 import command.Command
+import command.CommandResult
 import iostreamers.Messenger
 import iostreamers.TextColor
 import organization.Organization
-import request.Request
-import request.Response
+import message.Request
+import message.Response
 import java.util.stream.Collectors
 
 class PrintUniquePostalAddressCommand(
@@ -15,11 +16,11 @@ class PrintUniquePostalAddressCommand(
     override val info: String
         get() = "вывести уникальные значения поля postalAddress всех элементов в коллекции"
 
-    override fun execute(req: Request): Response {
+    override fun execute(req: Request): CommandResult {
         argumentValidator.check(req.args)
 
         if (collection.isEmpty()) {
-            return Response(true, "Коллекция пуста", req.key)
+            return CommandResult(Response(req.key, true, "Коллекция пуста"))
         }
 
         val setOfAddresses = collection.stream()
@@ -36,6 +37,6 @@ class PrintUniquePostalAddressCommand(
             output += Messenger.message("\n$it", TextColor.BLUE)
         }
 
-        return Response(true, output, req.key)
+        return CommandResult(Response(req.key, true, output))
     }
 }

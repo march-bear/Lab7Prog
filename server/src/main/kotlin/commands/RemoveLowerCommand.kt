@@ -1,10 +1,10 @@
-package command.implementations
+package commands
 
 import collection.CollectionWrapper
 import command.*
 import organization.Organization
-import request.Request
-import request.Response
+import message.Request
+import message.Response
 import java.util.*
 
 /**
@@ -20,7 +20,7 @@ class RemoveLowerCommand(
 
     override val argumentValidator = ArgumentValidator(listOf(ArgumentType.ORGANIZATION))
 
-    override fun execute(req: Request): Response {
+    override fun execute(req: Request): CommandResult {
         argumentValidator.check(req.args)
 
         val element = req.args.organization!!
@@ -38,8 +38,8 @@ class RemoveLowerCommand(
         }
 
         if (output != "")
-            return Response(true, output, req.key)
+            return CommandResult(Response(req.key, true, output))
 
-        return Response(true, "В коллекции нет элементов, меньших, чем введенный", req.key)
+        return CommandResult(Response(req.key, true, "В коллекции нет элементов, меньших, чем введенный"))
     }
 }

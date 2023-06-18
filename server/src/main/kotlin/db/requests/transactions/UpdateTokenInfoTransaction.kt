@@ -4,7 +4,7 @@ import ChangeType
 import com.google.common.hash.Hashing
 import command.CommandArgument
 import db.manager.TOKEN_VALIDITY_PERIOD
-import message.Infarct
+import message.DataBaseChanges
 import java.sql.Connection
 import java.sql.SQLException
 import java.sql.Timestamp
@@ -13,12 +13,12 @@ class UpdateTokenInfoTransaction(
     private val token: String,
     private val updateLastUse: Boolean = true
 ) : AbstractTransaction() {
-    override fun execute(conn: Connection): Infarct? {
+    override fun execute(conn: Connection): DataBaseChanges {
         conn.autoCommit = false
         val tokenHash = Hashing.sha1().hashString(token, charset("UTF-8")).toString()
         val stat = conn.createStatement()
         val tokens = stat.executeQuery(
-            "SELECT user_id FROM TOKENS WHERE TOKENS.token_hash = '$tokenHash'"
+            "SELECT * FROM TOKENS WHERE TOKENS.token_hash = '$tokenHash'"
         )
 
         var res = "f"
@@ -38,14 +38,9 @@ class UpdateTokenInfoTransaction(
                 )
             }
         }
-        try {
-            conn.commit()
-        } catch (ex: SQLException) {
-            conn.autoCommit = false
-            return null
-        }
-        conn.autoCommit = false
+        conn.commit()
+        conn.autoCommit = true
 
-        return Infarct("TOKENS", -1, listOf(Pair(ChangeType.UPDATE, CommandArgument(res))))
+        return DataBaseChanges("TOKENS", -1, listOf(Pair(ChangeType.UPDATE, CommandArgument(res))))
     }
 }

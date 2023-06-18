@@ -1,10 +1,10 @@
-package command.implementations
+package commands
 
 import collection.CollectionWrapper
 import command.*
 import organization.Organization
-import request.Request
-import request.Response
+import message.Request
+import message.Response
 
 class AddIfMaxCommand(
     private val collection: CollectionWrapper<Organization>,
@@ -17,7 +17,7 @@ class AddIfMaxCommand(
 
     override val argumentValidator: ArgumentValidator = ArgumentValidator(listOf(ArgumentType.ORGANIZATION))
 
-    override fun execute(req: Request): Response {
+    override fun execute(req: Request): CommandResult {
         argumentValidator.check(req.args)
 
         val elem = req.args.organization!!
@@ -26,9 +26,9 @@ class AddIfMaxCommand(
 
         if (collection.isEmpty() || newElem!! > collection.max()) {
             collection.add(newElem!!)
-            return Response(true,"Элемент добавлен в коллекцию", req.key)
+            return CommandResult(Response(req.key, true,"Элемент добавлен в коллекцию"))
         }
 
-        return Response(true, "Элемент не является максимальным", req.key)
+        return CommandResult(Response(req.key, true, "Элемент не является максимальным"))
     }
 }

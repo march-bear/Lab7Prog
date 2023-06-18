@@ -43,6 +43,14 @@ class ChannelClientWorker (
     private val localCommandList: MutableList<CommandInfo> = mutableListOf()
     internal var token: String? = null
 
+    init {
+        localCommandList.add(CommandInfo("help", "вывести список команд", listOf()))
+        localCommandList.add(CommandInfo("execute_script", "вывести список команд", listOf(ArgumentType.STRING)))
+        localCommandList.add(CommandInfo("exit", "завершить выполнение программы", listOf()))
+        localCommandList.add(CommandInfo("check_connect", "проверить соединение", listOf(ArgumentType.TOKEN)))
+        localCommandList.add(CommandInfo("update_command_list", "обновить список команд", listOf(ArgumentType.TOKEN)))
+    }
+
     override fun start() {
         if (!connect()) {
             for (_i in 1..20) {
@@ -129,16 +137,21 @@ class ChannelClientWorker (
             Messenger.inputPrompt(">>>", " ")
             val (name, args) = try { reader.readCommand()!! } catch (ex: NullPointerException) { break }
             try {
-                if {}
-
-                else {
+                if (name in localCommandList.stream().map { it.name }.toList()) {
+                    get<Task<ChannelClientWorker>>(named(name)) { parametersOf(args) }.execute(
+                        this
+                    )
+                } else {
                     val commandInfo = commandList.stream().filter { it.name == name }.findFirst().get()
                     if (ArgumentType.ORGANIZATION in commandInfo.args)
                         args.setOrganization(orgFactory.newOrganizationFromInput())
 
+                    if (ArgumentType.TOKEN in commandInfo.args)
+                        args.setToken(token)
+
                     argValidatorFactory.getByCommandName(name)!!.check(args)
                     val key = generateKey()
-                    val response = sendAndReceive(Request(name, key, args))
+                    val response = sendAndReceive(Request(key, name, args))
                     if (response != null)
                         processMessage(response, key)
                 }
@@ -215,6 +228,8 @@ class ChannelClientWorker (
     }
 
     fun getCommandList(): List<CommandInfo> = ArrayList(commandList)
+
+    fun getLocalCommandList(): List<CommandInfo> = ArrayList(localCommandList)
 
     companion object {
         const val MAX_RESPONSE_TIME = 10000L
